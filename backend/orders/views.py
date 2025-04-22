@@ -1,3 +1,11 @@
-from django.shortcuts import render
+from django.http import JsonResponse
+from customers.models import Branch
 
-# Create your views here.
+def get_branches(request):
+    customer_id = request.GET.get('customer_id')
+    branches = []
+
+    if customer_id:
+        branches = Branch.objects.filter(customer_id=customer_id).values('id', 'name')
+
+    return JsonResponse({'branches': list(branches)})
