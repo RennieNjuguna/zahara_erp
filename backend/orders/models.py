@@ -9,7 +9,7 @@ class Order(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     stems = models.PositiveIntegerField()
-    price_per_stem = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
+    price_per_stem = models.DecimalField(max_digits=10, decimal_places=2, null=False, default=0)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
     currency = models.CharField(max_length=10, editable=False)
     invoice_code = models.CharField(max_length=20, unique=True, editable=False)
