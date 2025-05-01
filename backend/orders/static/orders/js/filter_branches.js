@@ -2,28 +2,28 @@
     $(document).ready(function() {
         $('#id_customer').change(function() {
             var customerId = $(this).val();
-            var url = window.location.href;
+            var branchField = $('#id_branch');
 
-            $.ajax({
-                url: '/admin/get-branches/',
-                data: {
-                    'customer_id': customerId
-                },
-                success: function(data) {
-                    var branchField = $('#id_branch');
-                    branchField.empty();
+            // Clear current options
+            branchField.empty();
 
-                    if (data.branches.length === 0) {
-                        branchField.append('<option value="">No branches</option>');
-                    } else {
-                        branchField.append('<option value="">---------</option>');
-                        for (var i = 0; i < data.branches.length; i++) {
-                            var branch = data.branches[i];
-                            branchField.append('<option value="' + branch.id + '">' + branch.name + '</option>');
-                        }
+            if (customerId) {
+                $.ajax({
+                    url: '/orders/get-branches/',
+                    data: {
+                        'customer_id': customerId
+                    },
+                    dataType: 'json',
+                    success: function(data) {
+                        branchField.append($('<option></option>').attr('value', '').text('---------'));
+                        $.each(data, function(index, branch) {
+                            branchField.append($('<option></option>').attr('value', branch.id).text(branch.name));
+                        });
                     }
-                }
-            });
+                });
+            } else {
+                branchField.append($('<option></option>').attr('value', '').text('---------'));
+            }
         });
     });
 })(django.jQuery);

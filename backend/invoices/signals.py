@@ -28,7 +28,7 @@ def create_invoice_for_order(sender, instance, created, **kwargs):
             p.drawString(100, 720, f"Branch: {instance.branch.name}")
         p.drawString(100, 700, f"Product: {instance.product.name}")
         p.drawString(100, 680, f"Stems: {instance.stems}")
-        p.drawString(100, 660, f"Total Amount: {instance.total_amount} {instance.customer.currency}")
+        p.drawString(100, 660, f"Total Amount: {instance.total_amount} {instance.customer.preferred_currency}")
 
         p.showPage()
         p.save()
