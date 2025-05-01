@@ -2,22 +2,22 @@ from django import forms
 from .models import Order
 from customers.models import Branch
 
-
 class OrderAdminForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = '__all__'
+        exclude = ['price_per_stem', 'total_amount', 'currency', 'invoice_code']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Optional: Restrict branches to those related to the selected customer via AJAX
+        self.fields['branch'].queryset = Branch.objects.none()
 
         if 'customer' in self.data:
             try:
                 customer_id = int(self.data.get('customer'))
                 self.fields['branch'].queryset = Branch.objects.filter(customer_id=customer_id)
             except (ValueError, TypeError):
-                self.fields['branch'].queryset = Branch.objects.none()
-        elif self.instance.pk:
+                pass
+        elif self.instance.pk and self.instance.customer:
             self.fields['branch'].queryset = Branch.objects.filter(customer=self.instance.customer)
-        else:
-            self.fields['branch'].queryset = Branch.objects.none()
