@@ -1,0 +1,12 @@
+<h2>Invoice: {{ invoice.invoice_code }}</h2>
+<p><strong>Date:</strong> {{ invoice.order.date }}</p>
+<p><strong>Customer:</strong> {{ invoice.order.customer.name }}</p>
+{% if invoice.order.branch %}
+    <p><strong>Branch:</strong> {{ invoice.order.branch.name }}</p>
+{% endif %}
+<p><strong>Product:</strong> {{ invoice.order.product.name }}</p>
+<p><strong>Boxes:</strong> {{ invoice.order.boxes }}</p>
+<p><strong>Stems per Box:</strong> {{ invoice.order.stems_per_box }}</p>
+<p><strong>Total Stems:</strong> {{ invoice.order.stems }}</p>
+<p><strong>Total Amount:</strong> {{ invoice.order.total_amount }} {{ invoice.order.currency }}</p>
+

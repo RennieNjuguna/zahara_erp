@@ -4,8 +4,13 @@ from django.utils.html import format_html
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ('order', 'invoice_code', 'download_invoice')
+    list_display = ('order', 'invoice_code', 'invoice_date', 'download_invoice')
     search_fields = ('invoice_code', 'order__invoice_code')
+
+    def invoice_date(self, obj):
+        return obj.order.date  # Uses the date from the related Order
+
+    invoice_date.short_description = 'Date'
 
     def download_invoice(self, obj):
         if obj.pdf_file:
