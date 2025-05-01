@@ -5,12 +5,10 @@ from customers.models import Branch
 class OrderAdminForm(forms.ModelForm):
     class Meta:
         model = Order
-        exclude = ['price_per_stem', 'total_amount', 'currency', 'invoice_code']
+        exclude = ['stems', 'price_per_stem', 'total_amount', 'currency', 'invoice_code']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Optional: Restrict branches to those related to the selected customer via AJAX
         self.fields['branch'].queryset = Branch.objects.none()
 
         if 'customer' in self.data:

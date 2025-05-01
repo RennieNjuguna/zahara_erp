@@ -5,34 +5,41 @@ from .models import Invoice
 from reportlab.pdfgen import canvas
 from django.core.files.base import ContentFile
 from io import BytesIO
+import os
+
+def generate_invoice_pdf(invoice, order):
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+    p.setFont("Helvetica", 20)
+    p.drawString(100, 800, "Zahara Flowers Invoice")
+
+    p.setFont("Helvetica", 12)
+    p.drawString(100, 770, f"Date: {order.date}")
+    p.drawString(100, 750, f"Invoice Code: {order.invoice_code}")
+    p.drawString(100, 730, f"Customer: {order.customer.name}")
+    if order.branch:
+        p.drawString(100, 710, f"Branch: {order.branch.name}")
+    p.drawString(100, 690, f"Product: {order.product.name}")
+    p.drawString(100, 670, f"Boxes: {order.boxes}")
+    p.drawString(100, 650, f"Stems per Box: {order.stems_per_box}")
+    p.drawString(100, 630, f"Total Stems: {order.stems}")
+    p.drawString(100, 610, f"Total Amount: {order.total_amount} {order.currency}")
+
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    invoice.pdf_file.save(f"{order.invoice_code}.pdf", ContentFile(buffer.read()))
+    buffer.close()
 
 @receiver(post_save, sender=Order)
-def create_invoice_for_order(sender, instance, created, **kwargs):
-    if created:
-        # Create the Invoice Code
-        invoice_code = instance.invoice_code
+def create_or_update_invoice_for_order(sender, instance, **kwargs):
+    invoice, created = Invoice.objects.get_or_create(order=instance, defaults={'invoice_code': instance.invoice_code})
 
-        # Create Invoice object
-        invoice = Invoice.objects.create(order=instance, invoice_code=invoice_code)
+    if not created:
+        # If the invoice exists and we’re editing the order, regenerate the PDF
+        if invoice.pdf_file:
+            if os.path.isfile(invoice.pdf_file.path):
+                os.remove(invoice.pdf_file.path)
 
-        # Now generate a simple PDF
-        buffer = BytesIO()
-        p = canvas.Canvas(buffer)
-        p.setFont("Helvetica", 20)
-        p.drawString(100, 800, "Zahara Flowers Invoice")
-
-        p.setFont("Helvetica", 12)
-        p.drawString(100, 760, f"Invoice Code: {invoice_code}")
-        p.drawString(100, 740, f"Customer: {instance.customer.name}")
-        if instance.branch:
-            p.drawString(100, 720, f"Branch: {instance.branch.name}")
-        p.drawString(100, 700, f"Product: {instance.product.name}")
-        p.drawString(100, 680, f"Stems: {instance.stems}")
-        p.drawString(100, 660, f"Total Amount: {instance.total_amount} {instance.customer.preferred_currency}")
-
-        p.showPage()
-        p.save()
-
-        buffer.seek(0)
-        invoice.pdf_file.save(f"{invoice_code}.pdf", ContentFile(buffer.read()))
-        buffer.close()
+    generate_invoice_pdf(invoice, instance)
