@@ -15,6 +15,7 @@ class Order(models.Model):
     currency = models.CharField(max_length=10, editable=False)
     invoice_code = models.CharField(max_length=20, unique=True, editable=False)
     date = models.DateField(default=timezone.now)
+    remarks = models.CharField(max_length=255, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # Fetch price from CustomerProductPrice
