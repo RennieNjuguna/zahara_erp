@@ -23,6 +23,7 @@ def generate_invoice_pdf(invoice, order):
     p.drawString(100, 670, f"Boxes: {order.boxes}")
     p.drawString(100, 650, f"Stems per Box: {order.stems_per_box}")
     p.drawString(100, 630, f"Total Stems: {order.stems}")
+    p.drawString(100, 590, f"Price per Stem: {order.price_per_stem} {order.currency}")
     p.drawString(100, 610, f"Total Amount: {order.total_amount} {order.currency}")
 
     p.showPage()

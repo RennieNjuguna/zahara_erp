@@ -1,12 +1,10 @@
 (function($) {
     $(document).ready(function() {
-        $('#id_customer').change(function() {
-            var customerId = $(this).val();
-            var branchField = $('#id_branch');
+        var customerField = $('#id_customer');
+        var branchField = $('#id_branch');
 
-            // Clear current options
+        function loadBranches(customerId, selectedBranchId) {
             branchField.empty();
-
             if (customerId) {
                 $.ajax({
                     url: '/orders/get-branches/',
@@ -17,13 +15,29 @@
                     success: function(data) {
                         branchField.append($('<option></option>').attr('value', '').text('---------'));
                         $.each(data, function(index, branch) {
-                            branchField.append($('<option></option>').attr('value', branch.id).text(branch.name));
+                            var option = $('<option></option>').attr('value', branch.id).text(branch.name);
+                            if (branch.id == selectedBranchId) {
+                                option.attr('selected', 'selected');
+                            }
+                            branchField.append(option);
                         });
                     }
                 });
             } else {
                 branchField.append($('<option></option>').attr('value', '').text('---------'));
             }
+        }
+
+        // On customer change
+        customerField.change(function() {
+            loadBranches($(this).val());
         });
+
+        // Trigger it on page load with existing values
+        var existingCustomerId = customerField.val();
+        var existingBranchId = branchField.val();
+        if (existingCustomerId) {
+            loadBranches(existingCustomerId, existingBranchId);
+        }
     });
 })(django.jQuery);

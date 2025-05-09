@@ -7,8 +7,8 @@ class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    boxes = models.PositiveIntegerField()
-    stems_per_box = models.PositiveIntegerField()
+    boxes = models.PositiveIntegerField(default=1)
+    stems_per_box = models.PositiveIntegerField(default=1)
     stems = models.PositiveIntegerField(editable=False)  # Automatically calculated
     price_per_stem = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
