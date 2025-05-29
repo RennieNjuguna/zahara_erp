@@ -1,82 +1,92 @@
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfgen import canvas
 from io import BytesIO
+from django.core.files.base import ContentFile
 from orders.models import Order
 from customers.models import Customer, Branch
-from datetime import datetime
+from .models import Invoice, AccountStatement
+from django.db.models import Q
+
+def generate_invoice_pdf(invoice):
+    order = invoice.order
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+    p.setFont("Helvetica", 20)
+    p.drawString(100, 800, "Zahara Flowers Invoice")
+
+    p.setFont("Helvetica", 12)
+    p.drawString(100, 770, f"Date: {order.date}")
+    p.drawString(100, 750, f"Invoice Code: {order.invoice_code}")
+    p.drawString(100, 730, f"Customer: {order.customer.name}")
+    if order.branch:
+        p.drawString(100, 710, f"Branch: {order.branch.name}")
+    y = 690
+    for item in order.items.all():
+        p.drawString(100, y, f"Product: {item.product.name}")
+        p.drawString(100, y-20, f"Boxes: {item.boxes}")
+        p.drawString(100, y-40, f"Stems per Box: {item.stems_per_box}")
+        p.drawString(100, y-60, f"Total Stems: {item.stems}")
+        p.drawString(100, y-80, f"Price per Stem: {item.price_per_stem} {order.currency}")
+        p.drawString(100, y-100, f"Item Total: {item.total_amount} {order.currency}")
+        y -= 120
+    p.drawString(100, y-20, f"Total Amount: {order.total_amount} {order.currency}")
+    if order.remarks:
+        p.drawString(100, y-40, f"Remarks: {order.remarks}")
+
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    invoice.pdf_file.save(f"{order.invoice_code}.pdf", ContentFile(buffer.read()))
+    buffer.close()
 
 def generate_account_statement_pdf(statement):
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    elements = []
-    styles = getSampleStyleSheet()
-
     customer = statement.customer
-    month = statement.month.month
-    year = statement.month.year
+    month = statement.month
 
-    # Include branches
     branches = Branch.objects.filter(customer=customer)
-    customer_ids = [customer.id] + [branch.id for branch in branches]
+    branch_ids = branches.values_list('id', flat=True)
 
     orders = Order.objects.filter(
-        customer__in=customer_ids,
-        date__year=year,
-        date__month=month
-    ).select_related('customer', 'branch', 'product')
+        Q(customer=customer) | Q(branch__in=branch_ids),
+        date__year=month.year,
+        date__month=month.month
+    ).order_by('date')
 
-    elements.append(Paragraph(f"Account Statement for {customer.name}", styles['Title']))
-    elements.append(Paragraph(f"Month: {statement.month.strftime('%B %Y')}", styles['Normal']))
-    elements.append(Paragraph(f"Created On: {statement.created_at.strftime('%Y-%m-%d')}", styles['Normal']))
-    elements.append(Spacer(1, 12))
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+    p.setFont("Helvetica", 20)
+    p.drawString(100, 800, f"Account Statement for {customer.name}")
+    p.setFont("Helvetica", 12)
+    p.drawString(100, 780, f"Month: {month.strftime('%B %Y')}")
 
-    headers = ['Branch', 'Invoice Code', 'Date', 'Product', 'Boxes', 'Stems/Box', 'Total Stems', 'Price/Stem', 'Amount', 'Final Amount', 'Remarks']
-    data = [headers]
+    y = 760
+    p.drawString(100, y, "Invoice Code")
+    p.drawString(200, y, "Date")
+    p.drawString(300, y, "Product")
+    p.drawString(400, y, "Total Stems")
+    p.drawString(500, y, "Final Amount")
+    p.drawString(600, y, "Remarks")
+    y -= 20
 
     total_amount = 0
-    total_final_amount = 0
-    currency = customer.preferred_currency
-
     for order in orders:
         credited_stems = sum(cn.stems_affected for cn in order.credit_notes.all())
-        final_amount = (order.stems - credited_stems) * order.price_per_stem
-        total_amount += order.total_amount
-        total_final_amount += final_amount
+        for item in order.items.all():
+            final_amount = (item.stems - credited_stems if item == order.items.first() else item.stems) * item.price_per_stem
+            p.drawString(100, y, order.invoice_code)
+            p.drawString(200, y, order.date.strftime('%Y-%m-%d'))
+            p.drawString(300, y, item.product.name)
+            p.drawString(400, y, str(item.stems))
+            p.drawString(500, y, f"{final_amount:.2f} {order.currency}")
+            p.drawString(600, y, order.remarks or '')
+            total_amount += final_amount
+            y -= 20
 
-        row = [
-            order.branch.name if order.branch else "—",
-            order.invoice_code,
-            order.date.strftime('%Y-%m-%d'),
-            order.product.name,
-            order.boxes,
-            order.stems_per_box,
-            order.stems,
-            f"{order.price_per_stem:.2f}",
-            f"{order.total_amount:.2f} {order.currency}",
-            f"{final_amount:.2f} {order.currency}",
-            order.remarks or '',
-        ]
-        data.append(row)
+    p.drawString(100, y-20, f"Total: {total_amount:.2f} {customer.preferred_currency}")
 
-    # Summary row
-    summary_row = [''] * 8
-    summary_row[-3] = 'Total:'
-    summary_row[-2] = f"{total_amount:.2f} {currency}"
-    summary_row[-1] = f"{total_final_amount:.2f} {currency}"
-    data.append(summary_row)
+    p.showPage()
+    p.save()
 
-    table = Table(data, repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONT', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
-    ]))
-    elements.append(table)
-
-    doc.build(elements)
     buffer.seek(0)
-    return buffer.getvalue()
+    statement.pdf_file.save(f"{customer.short_code}_statement_{month.strftime('%Y_%m')}.pdf", ContentFile(buffer.read()))
+    buffer.close()
