@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from django.http import HttpResponse
 from django.utils.html import format_html
-from .models import Invoice, AccountStatement
+from .models import Invoice, AccountStatement, CreditNote
 from .utils import generate_account_statement_pdf
 
 @admin.register(Invoice)
@@ -56,3 +56,15 @@ class AccountStatementAdmin(admin.ModelAdmin):
         return self.generate_pdf(request, statement.id)
 
     download_statement.short_description = "Download selected PDF"
+
+@admin.register(CreditNote)
+class CreditNoteAdmin(admin.ModelAdmin):
+    list_display = ('code', 'order', 'title', 'stems_affected', 'credit_amount', 'created_at')
+    list_filter = ('created_at', 'order__customer')
+    search_fields = ('code', 'title', 'order__invoice_code')
+    readonly_fields = ('code', 'credit_amount', 'created_at')
+
+    def credit_amount(self, obj):
+        return f"{obj.credit_amount:.2f} {obj.order.currency}"
+
+    credit_amount.short_description = "Credit Amount"

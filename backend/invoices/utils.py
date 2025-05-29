@@ -4,6 +4,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
 from orders.models import Order
+from customers.models import Customer, Branch
 from datetime import datetime
 
 def generate_account_statement_pdf(statement):
@@ -16,33 +17,33 @@ def generate_account_statement_pdf(statement):
     month = statement.month.month
     year = statement.month.year
 
+    # Include branches
+    branches = Branch.objects.filter(customer=customer)
+    customer_ids = [customer.id] + [branch.id for branch in branches]
+
     orders = Order.objects.filter(
-        customer=customer,
+        customer__in=customer_ids,
         date__year=year,
         date__month=month
-    ).select_related('branch', 'product')
+    ).select_related('customer', 'branch', 'product')
 
     elements.append(Paragraph(f"Account Statement for {customer.name}", styles['Title']))
     elements.append(Paragraph(f"Month: {statement.month.strftime('%B %Y')}", styles['Normal']))
     elements.append(Paragraph(f"Created On: {statement.created_at.strftime('%Y-%m-%d')}", styles['Normal']))
     elements.append(Spacer(1, 12))
 
-    # Determine if remarks column is needed
-    include_remarks = any(order.remarks for order in orders)
-
-    headers = ['Branch', 'Invoice Code', 'Date', 'Product', 'Boxes', 'Stems/Box', 'Total Stems', 'Price/Stem', 'Amount']
-    if include_remarks:
-        headers.append('Remarks')
-
+    headers = ['Branch', 'Invoice Code', 'Date', 'Product', 'Boxes', 'Stems/Box', 'Total Stems', 'Price/Stem', 'Amount', 'Final Amount', 'Remarks']
     data = [headers]
 
     total_amount = 0
-    currency = None
+    total_final_amount = 0
+    currency = customer.preferred_currency
 
     for order in orders:
-        amount = order.total_amount
-        total_amount += amount
-        currency = order.currency  # Assuming all in same currency
+        credited_stems = sum(cn.stems_affected for cn in order.credit_notes.all())
+        final_amount = (order.stems - credited_stems) * order.price_per_stem
+        total_amount += order.total_amount
+        total_final_amount += final_amount
 
         row = [
             order.branch.name if order.branch else "—",
@@ -53,21 +54,17 @@ def generate_account_statement_pdf(statement):
             order.stems_per_box,
             order.stems,
             f"{order.price_per_stem:.2f}",
-            f"{amount:.2f} {order.currency}"
+            f"{order.total_amount:.2f} {order.currency}",
+            f"{final_amount:.2f} {order.currency}",
+            order.remarks or '',
         ]
-
-        if include_remarks:
-            row.append(order.remarks or '')
-
         data.append(row)
 
     # Summary row
     summary_row = [''] * 8
-    if include_remarks:
-        summary_row.append('')  # maintain column alignment
-
-    summary_row[-2] = 'Total:'
-    summary_row[-1] = f"{total_amount:.2f} {currency or ''}"
+    summary_row[-3] = 'Total:'
+    summary_row[-2] = f"{total_amount:.2f} {currency}"
+    summary_row[-1] = f"{total_final_amount:.2f} {currency}"
     data.append(summary_row)
 
     table = Table(data, repeatRows=1)
@@ -81,6 +78,5 @@ def generate_account_statement_pdf(statement):
     elements.append(table)
 
     doc.build(elements)
-
     buffer.seek(0)
     return buffer.getvalue()

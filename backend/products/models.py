@@ -17,3 +17,4 @@ class CustomerProductPrice(models.Model):
 
     def __str__(self):
         return f"{self.customer.name} - {self.product.name} @ {self.price_per_stem}"
+
