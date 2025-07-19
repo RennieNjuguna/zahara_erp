@@ -30,6 +30,11 @@ class OrderItem(models.Model):
         return f"{self.product.name} in {self.order.invoice_code}"
 
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ('original', 'Original'),
+        ('edited', 'Edited'),
+        ('claim', 'Claim (Bad Produce)'),
+    ]
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
@@ -37,6 +42,8 @@ class Order(models.Model):
     invoice_code = models.CharField(max_length=20, unique=True, editable=False)
     date = models.DateField(default=timezone.now)
     remarks = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='original')
+    status_reason = models.CharField(max_length=255, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # Ensure currency consistency across items

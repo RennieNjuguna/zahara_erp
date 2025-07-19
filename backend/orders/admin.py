@@ -13,3 +13,8 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = ('invoice_code', 'customer', 'branch', 'date', 'total_amount', 'currency')
     list_filter = ('customer', 'branch', 'date')
     search_fields = ('invoice_code', 'customer__name')
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        # After saving inlines, recalculate total_amount
+        form.instance.save()

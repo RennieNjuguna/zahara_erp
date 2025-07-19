@@ -70,9 +70,12 @@ def generate_account_statement_pdf(statement):
 
     total_amount = 0
     for order in orders:
-        credited_stems = sum(cn.stems_affected for cn in order.credit_notes.all())
+        # For each item, sum credited stems from all related CreditNoteItems
         for item in order.items.all():
-            final_amount = (item.stems - credited_stems if item == order.items.first() else item.stems) * item.price_per_stem
+            credited_stems = sum(
+                cni.stems_affected for cni in item.credit_notes.through.objects.filter(order_item=item)
+            )
+            final_amount = (item.stems - credited_stems) * item.price_per_stem
             p.drawString(100, y, order.invoice_code)
             p.drawString(200, y, order.date.strftime('%Y-%m-%d'))
             p.drawString(300, y, item.product.name)
@@ -88,5 +91,7 @@ def generate_account_statement_pdf(statement):
     p.save()
 
     buffer.seek(0)
-    statement.pdf_file.save(f"{customer.short_code}_statement_{month.strftime('%Y_%m')}.pdf", ContentFile(buffer.read()))
+    pdf_bytes = buffer.read()
+    statement.pdf_file.save(f"{customer.short_code}_statement_{month.strftime('%Y_%m')}.pdf", ContentFile(pdf_bytes))
     buffer.close()
+    return pdf_bytes
