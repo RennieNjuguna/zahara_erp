@@ -147,7 +147,7 @@ class PaymentAdmin(admin.ModelAdmin):
 @admin.register(PaymentAllocation)
 class PaymentAllocationAdmin(admin.ModelAdmin):
     list_display = [
-        'payment', 'order', 'amount', 'allocated_at', 'customer_name'
+        'payment', 'order', 'amount', 'allocated_at', 'customer_name', 'unallocated_amount_display'
     ]
     list_filter = ['allocated_at', 'payment__payment_method']
     search_fields = [
@@ -160,6 +160,18 @@ class PaymentAllocationAdmin(admin.ModelAdmin):
     def customer_name(self, obj):
         return obj.payment.customer.name
     customer_name.short_description = 'Customer'
+
+    def unallocated_amount_display(self, obj):
+        """Show unallocated amount at the time this allocation was made"""
+        # Get all allocations for this payment up to and including this allocation
+        allocations_up_to_this = obj.payment.allocations.filter(
+            allocated_at__lte=obj.allocated_at
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # Calculate unallocated amount at this point in time
+        unallocated_at_time = obj.payment.amount - allocations_up_to_this
+        return f"{unallocated_at_time} {obj.payment.currency}"
+    unallocated_amount_display.short_description = 'Unallocated Amount'
 
 
 @admin.register(CustomerBalance)
