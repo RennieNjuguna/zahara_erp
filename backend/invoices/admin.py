@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django.urls import path
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render
 from django.utils.html import format_html
-from .models import Invoice, AccountStatement, CreditNote, CreditNoteItem, Payment, PaymentAllocation
+from .models import Invoice, AccountStatement, CreditNote, CreditNoteItem, Order
 from .utils import generate_account_statement_pdf
+from django.db import models
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
@@ -69,29 +71,4 @@ class CreditNoteAdmin(admin.ModelAdmin):
     search_fields = ('code', 'title', 'order__invoice_code')
     readonly_fields = ('code', 'created_at')
 
-class PaymentAllocationInline(admin.TabularInline):
-    model = PaymentAllocation
-    extra = 1
-
-@admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
-    inlines = [PaymentAllocationInline]
-    list_display = ('customer', 'amount', 'payment_date', 'payment_method', 'allocated_amount', 'unallocated_amount')
-    list_filter = ('payment_method', 'payment_date', 'customer')
-    search_fields = ('customer__name', 'reference', 'notes')
-    readonly_fields = ('created_at',)
-
-    def allocated_amount(self, obj):
-        return obj.allocated_amount()
-    allocated_amount.short_description = "Allocated"
-
-    def unallocated_amount(self, obj):
-        return obj.unallocated_amount()
-    unallocated_amount.short_description = "Unallocated"
-
-@admin.register(PaymentAllocation)
-class PaymentAllocationAdmin(admin.ModelAdmin):
-    list_display = ('payment', 'order', 'amount', 'allocated_at')
-    list_filter = ('allocated_at', 'payment__customer')
-    search_fields = ('payment__customer__name', 'order__invoice_code')
-    readonly_fields = ('allocated_at',)
+# Payment and PaymentAllocation admin classes have been moved to the payments app

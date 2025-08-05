@@ -1,0 +1,174 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Payment Dashboard{% endblock %}
+
+{% block content %}
+<div class="payment-dashboard">
+    <h1>Payment Management Dashboard</h1>
+
+    <!-- Summary Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Payments</h3>
+            <p class="stat-value">{{ total_payments|floatformat:2 }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Total Outstanding</h3>
+            <p class="stat-value">{{ total_outstanding|floatformat:2 }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Recent Payments</h3>
+            <p class="stat-value">{{ recent_payments.count }}</p>
+        </div>
+    </div>
+
+    <!-- Recent Payments -->
+    <div class="section">
+        <h2>Recent Payments</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr>
+                    <td>{{ payment.customer.name }}</td>
+                    <td>{{ payment.amount }} {{ payment.currency }}</td>
+                    <td>{{ payment.get_payment_method_display }}</td>
+                    <td>{{ payment.payment_date }}</td>
+                    <td>{{ payment.get_status_display }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No recent payments</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Customers with Balances -->
+    <div class="section">
+        <h2>Customers with Outstanding Balances</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Current Balance</th>
+                    <th>Currency</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for balance in customers_with_balances %}
+                <tr>
+                    <td>{{ balance.customer.name }}</td>
+                    <td>{{ balance.current_balance|floatformat:2 }}</td>
+                    <td>{{ balance.currency }}</td>
+                    <td>{{ balance.last_updated|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No customers with outstanding balances</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+            <a href="{% url 'payments:payment_create' %}" class="button">Create Payment</a>
+            <a href="{% url 'payments:payment_list' %}" class="button">View All Payments</a>
+            <a href="{% url 'payments:customer_balance_list' %}" class="button">Customer Balances</a>
+            <a href="{% url 'payments:account_statement_list' %}" class="button">Account Statements</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.payment-dashboard {
+    padding: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    margin: 10px 0 0 0;
+}
+
+.section {
+    margin-bottom: 30px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.data-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.quick-actions {
+    margin-top: 30px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+</style>
+{% endblock %}
