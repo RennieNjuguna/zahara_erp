@@ -93,60 +93,19 @@ def apply_credit_after_save(sender, instance, created, **kwargs):
     if created:
         instance.apply_credit()
 
-class Payment(models.Model):
-    PAYMENT_METHOD_CHOICES = [
-        ('cash', 'Cash'),
-        ('bank_transfer', 'Bank Transfer'),
-        ('check', 'Check'),
-        ('credit_card', 'Credit Card'),
-    ]
-
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='payments')
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    payment_date = models.DateField()
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
-    reference = models.CharField(max_length=100, blank=True)  # Check number, transaction ID, etc.
-    notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.customer.name} - {self.amount} {self.customer.preferred_currency} - {self.payment_date}"
-
-    def allocated_amount(self):
-        """Return the total amount allocated to orders"""
-        return sum(allocation.amount for allocation in self.allocations.all())
-
-    def unallocated_amount(self):
-        """Return the amount not yet allocated to orders"""
-        return self.amount - self.allocated_amount()
-
-class PaymentAllocation(models.Model):
-    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='allocations')
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_allocations')
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    allocated_at = models.DateTimeField(auto_now_add=True)
-
-    def clean(self):
-        if self.amount > self.payment.unallocated_amount() + self.amount:
-            raise ValidationError("Allocation amount exceeds available payment amount")
-        if self.amount > self.order.outstanding_amount():
-            raise ValidationError("Allocation amount exceeds order outstanding amount")
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.payment} -> {self.order.invoice_code}: {self.amount}"
+# Payment and PaymentAllocation models have been moved to the payments app
+# These models are now handled by the new payment system
 
 # Add outstanding_amount method to Order model
 def order_outstanding_amount(self):
     """Calculate outstanding amount for this order"""
     total_credits = sum(
-        cni.credit_amount for cni in self.credit_notes.through.objects.filter(order_item__order=self)
+        cni.credit_amount for cni in CreditNoteItem.objects.filter(order_item__order=self)
     )
+    # Use the new payment system
+    from payments.models import PaymentAllocation
     total_payments = sum(
-        allocation.amount for allocation in self.payment_allocations.all()
+        allocation.amount for allocation in PaymentAllocation.objects.filter(order=self)
     )
     return self.total_amount - total_credits - total_payments
 
@@ -161,6 +120,6 @@ def customer_outstanding_amount(self):
         total_outstanding += order.outstanding_amount()
     return total_outstanding
 
-# Add this method to Customer model (we'll need to import Customer)
+# Add this method to Customer model
 from customers.models import Customer
 Customer.outstanding_amount = customer_outstanding_amount

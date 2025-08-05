@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import Sum, Count
+
 
 class Customer(models.Model):
     CURRENCY_CHOICES = [
@@ -14,6 +16,19 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_order_statistics(self):
+        """Get comprehensive order statistics for this customer"""
+        orders = self.orders.all()
+
+        return {
+            'total_orders': orders.count(),
+            'total_sales': orders.aggregate(total=Sum('total_amount'))['total'] or 0,
+            'pending_orders': orders.filter(status='pending').count(),
+            'paid_orders': orders.filter(status='paid').count(),
+            'claimed_orders': orders.filter(status='claim').count(),
+            'cancelled_orders': orders.filter(status='cancelled').count(),
+        }
 
 class Branch(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='branches')

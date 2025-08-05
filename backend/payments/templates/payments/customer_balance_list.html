@@ -1,0 +1,319 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Customer Balances{% endblock %}
+
+{% block content %}
+<div class="customer-balance-list">
+    <div class="header">
+        <h1>Customer Balances</h1>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <form method="get" class="filter-form">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="currency">Currency</label>
+                    <select name="currency" id="currency">
+                        <option value="">All Currencies</option>
+                        <option value="KSH" {% if filters.currency == 'KSH' %}selected{% endif %}>KSH</option>
+                        <option value="USD" {% if filters.currency == 'USD' %}selected{% endif %}>USD</option>
+                        <option value="GBP" {% if filters.currency == 'GBP' %}selected{% endif %}>GBP</option>
+                        <option value="EUR" {% if filters.currency == 'EUR' %}selected{% endif %}>EUR</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="search">Search Customer</label>
+                    <input type="text" name="search" id="search" value="{{ filters.search|default:'' }}"
+                           placeholder="Customer name...">
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Filter</button>
+                    <a href="{% url 'payments:customer_balance_list' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Balance Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Total Number of Orders</th>
+                    <th>Total Sales</th>
+                    <th>Currency</th>
+                    <th>Claimed Orders</th>
+                    <th>Paid Orders</th>
+                    <th>Outstanding Orders</th>
+                    <th>Balance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer_data in page_obj %}
+                <tr>
+                    <td>{{ customer_data.customer.name }}</td>
+                    <td>{{ customer_data.total_orders }}</td>
+                    <td>{{ customer_data.total_sales|floatformat:2 }}</td>
+                    <td>{{ customer_data.balance.currency }}</td>
+                    <td>{{ customer_data.claimed_orders }}</td>
+                    <td>{{ customer_data.paid_orders }}</td>
+                    <td>{{ customer_data.pending_orders }}</td>
+                    <td>
+                        <span class="balance-amount {% if customer_data.balance.current_balance > 0 %}positive{% else %}negative{% endif %}">
+                            {{ customer_data.balance.current_balance|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'payments:customer_balance_detail' customer_data.customer.id %}" class="btn-small">View Details</a>
+                        <button onclick="recalculateBalance({{ customer_data.customer.id }})" class="btn-small btn-recalculate">Recalculate</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="no-data">No customer balances found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Previous</a>
+        {% endif %}
+
+        <span class="current-page">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function recalculateBalance(customerId) {
+    if (confirm('Are you sure you want to recalculate the balance for this customer?')) {
+        fetch(`/payments/balances/${customerId}/recalculate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Balance recalculated successfully!');
+                location.reload();
+            } else {
+                alert('Error recalculating balance: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error recalculating balance');
+        });
+    }
+}
+</script>
+
+<style>
+.customer-balance-list {
+    padding: 20px;
+}
+
+.header {
+    margin-bottom: 30px;
+}
+
+.filters {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #495057;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.data-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.balance-amount {
+    font-weight: bold;
+}
+
+.balance-amount.positive {
+    color: #dc3545;
+}
+
+.balance-amount.negative {
+    color: #28a745;
+}
+
+.btn-small {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-right: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-small:hover {
+    background-color: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-recalculate {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-recalculate:hover {
+    background-color: #e0a800;
+    color: #212529;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+    color: white;
+    text-decoration: none;
+}
+
+.no-data {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 20px 0;
+}
+
+.page-link {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.page-link:hover {
+    background-color: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.current-page {
+    font-weight: bold;
+    color: #495057;
+}
+</style>
+{% endblock %}
