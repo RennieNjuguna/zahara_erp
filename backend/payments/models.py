@@ -359,49 +359,7 @@ class PaymentLog(models.Model):
         return f"{self.get_action_display()} - {self.timestamp}"
 
 
-# Add methods to existing models
-def order_outstanding_amount(self):
-    """Calculate outstanding amount for this order"""
-    # Get total credits for this order
-    total_credits = CreditNote.objects.filter(
-        order=self
-    ).aggregate(
-        total=Sum('credit_note_items__credit_amount')
-    )['total'] or Decimal('0.00')
-
-    # Get total payments allocated to this order
-    total_payments = self.new_payment_allocations.aggregate(
-        total=Sum('amount')
-    )['total'] or Decimal('0.00')
-
-    return self.total_amount - total_credits - total_payments
-
-
-def customer_current_balance(self):
-    """Get current balance for this customer"""
-    balance, created = CustomerBalance.objects.get_or_create(
-        customer=self,
-        defaults={'currency': self.preferred_currency}
-    )
-    if created:
-        balance.recalculate_balance()
-    return balance.current_balance
-
-
-def customer_outstanding_amount(self):
-    """Calculate total outstanding amount for this customer"""
-    total_outstanding = Decimal('0.00')
-    for order in self.orders.all():
-        total_outstanding += order.outstanding_amount()
-    return total_outstanding
-
-
-# Add methods to Order model
-Order.outstanding_amount = order_outstanding_amount
-
-# Add methods to Customer model
-Customer.current_balance = customer_current_balance
-Customer.outstanding_amount = customer_outstanding_amount
+# Methods are now defined on their respective models to avoid monkey-patching
 
 # Signals to automatically update customer balances
 @receiver(post_save, sender=Payment)

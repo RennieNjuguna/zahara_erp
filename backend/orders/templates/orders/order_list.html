@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Orders</h3>
+  <a class="btn btn-primary btn-sm" href="{% url 'orders:order_create' %}">Create Order</a>
+  <form method="get" class="d-flex align-items-end" role="search">
+    <div class="me-2">
+      <label class="form-label">Customer</label>
+      <select class="form-select form-select-sm" name="customer">
+        <option value="">All</option>
+        {% for c in customers %}
+        <option value="{{ c.id }}" {% if filters.customer == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="me-2">
+      <label class="form-label">Status</label>
+      <select class="form-select form-select-sm" name="status">
+        <option value="">All</option>
+        <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="paid" {% if filters.status == 'paid' %}selected{% endif %}>Paid</option>
+        <option value="claim" {% if filters.status == 'claim' %}selected{% endif %}>Claim</option>
+        <option value="cancelled" {% if filters.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+      </select>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm">Filter</button>
+  </form>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Status</th><th>Total</th><th></th></tr></thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td>{{ o.invoice_code }}</td>
+            <td>{{ o.customer.name }}</td>
+            <td>{{ o.date|date:'Y-m-d' }}</td>
+            <td>{{ o.get_status_display }}</td>
+            <td>{{ o.total_amount }}</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'orders:order_detail' o.id %}">Open</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-muted">No orders</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

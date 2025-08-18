@@ -30,6 +30,25 @@ class Customer(models.Model):
             'cancelled_orders': orders.filter(status='cancelled').count(),
         }
 
+    def current_balance(self):
+        """Get current balance for this customer using CustomerBalance"""
+        from payments.models import CustomerBalance  # Local import to avoid circular dependency
+
+        balance, created = CustomerBalance.objects.get_or_create(
+            customer=self,
+            defaults={'currency': self.preferred_currency}
+        )
+        if created:
+            balance.recalculate_balance()
+        return balance.current_balance
+
+    def outstanding_amount(self):
+        """Calculate total outstanding amount for this customer"""
+        total_outstanding = 0
+        for order in self.orders.all():
+            total_outstanding += order.outstanding_amount()
+        return total_outstanding
+
 class Branch(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='branches')
     name = models.CharField(max_length=100)

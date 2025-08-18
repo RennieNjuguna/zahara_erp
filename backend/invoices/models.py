@@ -95,31 +95,3 @@ def apply_credit_after_save(sender, instance, created, **kwargs):
 
 # Payment and PaymentAllocation models have been moved to the payments app
 # These models are now handled by the new payment system
-
-# Add outstanding_amount method to Order model
-def order_outstanding_amount(self):
-    """Calculate outstanding amount for this order"""
-    total_credits = sum(
-        cni.credit_amount for cni in CreditNoteItem.objects.filter(order_item__order=self)
-    )
-    # Use the new payment system
-    from payments.models import PaymentAllocation
-    total_payments = sum(
-        allocation.amount for allocation in PaymentAllocation.objects.filter(order=self)
-    )
-    return self.total_amount - total_credits - total_payments
-
-# Add this method to Order model
-Order.outstanding_amount = order_outstanding_amount
-
-# Add outstanding_amount method to Customer model
-def customer_outstanding_amount(self):
-    """Calculate total outstanding amount for this customer"""
-    total_outstanding = 0
-    for order in self.orders.all():
-        total_outstanding += order.outstanding_amount()
-    return total_outstanding
-
-# Add this method to Customer model
-from customers.models import Customer
-Customer.outstanding_amount = customer_outstanding_amount

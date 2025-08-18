@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.invoice_code }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Order {{ order.invoice_code }}</h3>
+  <div>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'orders:order_list' %}">Back</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'orders:order_edit' order.id %}">Edit</a>
+    {% if order.invoice.pdf_file %}
+      <a class="btn btn-success btn-sm" href="{{ order.invoice.pdf_file.url }}" target="_blank">Invoice PDF</a>
+    {% endif %}
+  </div>
+  <form style="display:none;">{% csrf_token %}</form>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="text-muted">Customer</h6>
+        <div class="fw-bold">{{ order.customer.name }}</div>
+        <div class="small text-muted">Branch: {{ order.branch.name|default:'—' }}</div>
+        <hr>
+        <div class="d-flex justify-content-between"><span class="text-muted">Date</span><span>{{ order.date|date:'Y-m-d' }}</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Status</span><span>{{ order.get_status_display }}</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Currency</span><span>{{ order.currency }}</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Total</span><strong>{{ order.total_amount }}</strong></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title mb-0">Items</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>Product</th><th>Length (cm)</th><th>Boxes</th><th>Stems/Box</th><th>Price/Stem</th><th>Stems</th><th>Amount</th><th></th></tr></thead>
+            <tbody>
+              {% for i in order.items.all %}
+              <tr>
+                <td>{{ i.product.name }}</td>
+                <td>{{ i.stem_length_cm }}</td>
+                <td>{{ i.boxes }}</td>
+                <td>{{ i.stems_per_box }}</td>
+                <td>{{ i.price_per_stem }}</td>
+                <td>{{ i.stems }}</td>
+                <td>{{ i.total_amount }}</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-danger" href="{% url 'orders:order_item_delete' i.id %}">Remove</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" class="text-muted">No items</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'orders:order_item_add' order.id %}" class="card shadow-sm mt-3">
+      {% csrf_token %}
+      <div class="card-body">
+        <h6 class="card-title">Add Item</h6>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label">Product</label>
+            <select class="form-select" name="product" id="product-select" required>
+              <option value="">Select</option>
+              {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Length (cm)</label>
+            <input class="form-control" type="number" name="stem_length_cm" id="stem-length" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Boxes</label>
+            <input class="form-control" type="number" name="boxes" value="1" min="1" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Stems/Box</label>
+            <input class="form-control" type="number" name="stems_per_box" value="1" min="1" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Price/Stem</label>
+            <input class="form-control" type="number" step="0.01" name="price_per_stem" id="price-per-stem" required>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-end">
+        <button class="btn btn-primary btn-sm">Add Item</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('product-select').addEventListener('change', function(){
+  const productId = this.value; if(!productId) return;
+  const customerId = {{ order.customer.id }};
+  const form = new FormData(); form.append('customer_id', customerId); form.append('product_id', productId);
+  fetch('/orders/get-defaults/', { method:'POST', body: form })
+    .then(r=>r.json()).then(d=>{ if(d.success){ if(d.stem_length_cm){ document.getElementById('stem-length').value=d.stem_length_cm; } if(d.price_per_stem){ document.getElementById('price-per-stem').value=d.price_per_stem; } } });
+});
+</script>
+{% endblock %}
+
+

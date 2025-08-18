@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Payment Analytics{% endblock %}
+{% block content %}
+<h3 class="mb-3">Payment Analytics ({{ start_date }} → {{ end_date }})</h3>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Payment Trends</h5>
+        <ul class="small mb-0">
+          {% for d in payment_trends %}
+          <li>{{ d.payment_date }} — {{ d.total }}</li>
+          {% empty %}<li class="text-muted">No data</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Methods</h5>
+        <ul class="small mb-0">
+          {% for m in payment_methods %}
+          <li>{{ m.payment_method }} — {{ m.total }} ({{ m.count }})</li>
+          {% empty %}<li class="text-muted">No data</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+  <div class="card-body">
+    <h5 class="card-title">Top Customers</h5>
+    <ul class="small mb-0">
+      {% for c in top_customers %}
+      <li>{{ c.customer__name }} — {{ c.total }}</li>
+      {% empty %}<li class="text-muted">No data</li>{% endfor %}
+    </ul>
+  </div>
+  </div>
+{% endblock %}
+
+

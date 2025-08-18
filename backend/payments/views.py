@@ -30,9 +30,9 @@ def payment_dashboard(request):
         total=Sum('amount')
     )['total'] or Decimal('0.00')
 
-    total_outstanding = Customer.objects.aggregate(
-        total=Sum('outstanding_amount')
-    )['total'] or Decimal('0.00')
+    total_outstanding = sum(
+        customer.outstanding_amount() for customer in Customer.objects.all()
+    ) or Decimal('0.00')
 
     recent_payments = Payment.objects.filter(
         status='completed'
@@ -168,7 +168,7 @@ def payment_create(request):
             )
 
             messages.success(request, f'Payment created successfully: {payment}')
-            return redirect('payment_detail', payment_id=payment.payment_id)
+            return redirect('payments:payment_detail', payment_id=payment.payment_id)
 
         except Exception as e:
             messages.error(request, f'Error creating payment: {str(e)}')
@@ -214,7 +214,7 @@ def payment_edit(request, payment_id):
             )
 
             messages.success(request, f'Payment updated successfully: {payment}')
-            return redirect('payment_detail', payment_id=payment.payment_id)
+            return redirect('payments:payment_detail', payment_id=payment.payment_id)
 
         except Exception as e:
             messages.error(request, f'Error updating payment: {str(e)}')
@@ -417,7 +417,7 @@ def generate_account_statement(request, customer_id):
 
             if existing_statement:
                 messages.warning(request, 'Statement for this month already exists.')
-                return redirect('account_statement_detail', statement_id=existing_statement.id)
+                return redirect('payments:account_statement_detail', statement_id=existing_statement.id)
 
             # Create new statement
             statement = AccountStatement.objects.create(
@@ -444,7 +444,7 @@ def generate_account_statement(request, customer_id):
             )
 
             messages.success(request, f'Account statement generated successfully.')
-            return redirect('account_statement_detail', statement_id=statement.id)
+            return redirect('payments:account_statement_detail', statement_id=statement.id)
 
         except Exception as e:
             messages.error(request, f'Error generating statement: {str(e)}')

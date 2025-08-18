@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Home | Zahara ERP{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Orders</h5>
+        <p class="card-text">Create and manage customer orders, items, and logistics.</p>
+        <a class="btn btn-primary" href="/orders/">Open Orders</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Payments</h5>
+        <p class="card-text">Record payments, allocate to orders, and view balances.</p>
+        <a class="btn btn-primary" href="/payments/">Open Payments</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">Admin</h5>
+        <p class="card-text">Manage data and reports in Django Admin.</p>
+        <a class="btn btn-outline-secondary" href="/admin/">Open Admin</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

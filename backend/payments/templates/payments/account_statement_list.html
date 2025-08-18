@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Account Statements{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Account Statements</h3>
+  <a class="btn btn-primary btn-sm" href="#" onclick="document.getElementById('gen-form').classList.toggle('d-none')">Generate</a>
+  <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
+</div>
+
+<div id="gen-form" class="card shadow-sm mb-3 d-none">
+  <div class="card-body">
+    <form method="post" action="" onsubmit="return false">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Customer</label>
+          <select class="form-select" id="gf_customer">
+            {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Statement Date</label>
+          <input type="date" class="form-control" id="gf_statement_date">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Start</label>
+          <input type="date" class="form-control" id="gf_start">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">End</label>
+          <input type="date" class="form-control" id="gf_end">
+        </div>
+        <div class="col-md-2 text-end">
+          <button class="btn btn-success" type="button" onclick="gen()">Generate</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead><tr><th>Customer</th><th>Month</th><th>Opening</th><th>Closing</th><th>Total Orders</th><th>Total Credits</th><th>Total Payments</th><th></th></tr></thead>
+        <tbody>
+          {% for s in page_obj %}
+          <tr>
+            <td>{{ s.customer.name }}</td>
+            <td>{{ s.statement_date|date:'M Y' }}</td>
+            <td>{{ s.opening_balance }}</td>
+            <td>{{ s.closing_balance }}</td>
+            <td>{{ s.total_orders }}</td>
+            <td>{{ s.total_credits }}</td>
+            <td>{{ s.total_payments }}</td>
+            <td><a class="btn btn-sm btn-outline-primary" href="{% url 'payments:account_statement_detail' s.id %}">View</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="text-muted">No statements</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function gen(){
+  const c = document.getElementById('gf_customer').value;
+  const sd = document.getElementById('gf_statement_date').value;
+  const st = document.getElementById('gf_start').value;
+  const en = document.getElementById('gf_end').value;
+  if(!c||!sd||!st||!en){ alert('Fill all fields'); return; }
+  const tokenEl = document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]');
+  const csrftoken = tokenEl ? tokenEl.value : '';
+  fetch(`/payments/statements/generate/${c}/`, { method:'POST', headers:{'X-CSRFToken':csrftoken}, body: new URLSearchParams({ statement_date: sd, start_date: st, end_date: en }) })
+    .then(r=>{ if(r.redirected){ location.href=r.url } else { return r.text().then(t=>{ alert('Generation complete or see detail.'); location.reload(); }) } })
+}
+</script>
+{% endblock %}
+
+

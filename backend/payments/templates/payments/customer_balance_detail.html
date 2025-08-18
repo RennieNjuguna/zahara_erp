@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} | Balance{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">{{ customer.name }}</h3>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'payments:customer_balance_list' %}">Back</a>
+  <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between"><span class="text-muted">Current Balance</span><strong>{{ balance.current_balance }}</strong></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Currency</span><span>{{ balance.currency }}</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Last Updated</span><span>{{ balance.last_updated|date:"M d, Y H:i" }}</span></div>
+        <button class="btn btn-warning btn-sm mt-3" type="button" onclick="recalc()">Recalculate</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Payments</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for p in payments %}
+              <tr><td>{{ p.payment_date }}</td><td>{{ p.amount }} {{ p.currency }}</td><td>{{ p.get_payment_method_display }}</td><td>{{ p.get_status_display }}</td></tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted">No payments</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Outstanding Orders</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Invoice</th><th>Date</th><th>Total</th><th>Outstanding</th></tr></thead>
+            <tbody>
+              {% for o in outstanding_orders %}
+              <tr><td>{{ o.invoice_code }}</td><td>{{ o.date|date:'Y-m-d' }}</td><td>{{ o.total_amount }}</td><td>{{ o.outstanding_amount }}</td></tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted">No outstanding orders</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function recalc() {
+  const tokenEl = document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]');
+  const csrftoken = tokenEl ? tokenEl.value : '';
+  fetch('{% url "payments:recalculate_balance" customer.id %}', { method: 'POST', headers: { 'X-CSRFToken': csrftoken }})
+    .then(r => r.json()).then(d => { if(d.success){ location.reload(); } else { alert(d.error||'Error'); } });
+}
+</script>
+{% endblock %}
+
+
