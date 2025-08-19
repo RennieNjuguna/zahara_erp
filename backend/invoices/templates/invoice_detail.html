@@ -9,5 +9,22 @@
 <p><strong>Stems per Box:</strong> {{ invoice.order.stems_per_box }}</p>
 <p><strong>Total Stems:</strong> {{ invoice.order.stems }}</p>
 <p><strong>Price per Stem:</strong> {{ order.price_per_stem }} {{ order.currency }}</p>
+
 <p><strong>Total Amount:</strong> {{ invoice.order.total_amount }} {{ invoice.order.currency }}</p>
+
+<h3>Logistics Information</h3>
+<ul>
+    {% if invoice.order.logistics_provider %}
+        <li><strong>Provider:</strong> {{ invoice.order.logistics_provider }}</li>
+    {% endif %}
+    {% if invoice.order.logistics_cost %}
+        <li><strong>Cost:</strong> {{ invoice.order.logistics_cost }} {{ invoice.order.currency }}</li>
+    {% endif %}
+    {% if invoice.order.tracking_number %}
+        <li><strong>Tracking Number:</strong> {{ invoice.order.tracking_number }}</li>
+    {% endif %}
+    {% if invoice.order.delivery_status %}
+        <li><strong>Delivery Status:</strong> {{ invoice.order.delivery_status }}</li>
+    {% endif %}
+</ul>
 

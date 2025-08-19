@@ -3,7 +3,7 @@ from django.urls import path
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.html import format_html
-from .models import Invoice, AccountStatement, CreditNote, CreditNoteItem, Order
+from .models import Invoice, AccountStatement, CreditNote, CreditNoteItem
 from .utils import generate_account_statement_pdf
 from django.db import models
 

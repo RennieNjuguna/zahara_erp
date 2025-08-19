@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Statement {{ statement.id }}{% endblock %}
+{% block content %}
+<h3 class="mb-3">{{ statement.customer.name }} — {{ statement.statement_date|date:'F Y' }}</h3>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between"><span class="text-muted">Opening</span><strong>{{ statement.opening_balance }}</strong></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Closing</span><strong>{{ statement.closing_balance }}</strong></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Total Orders</span><span>{{ statement.total_orders }}</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Total Credits</span><span>{{ statement.total_credits }}</span></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Total Payments</span><span>{{ statement.total_payments }}</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Transactions ({{ statement.start_date }} to {{ statement.end_date }})</h5>
+        <div class="row">
+          <div class="col-md-4">
+            <h6>Orders</h6>
+            <ul class="small">
+              {% for o in statement_data.orders %}
+              <li>{{ o.invoice_code }} — {{ o.date|date:'Y-m-d' }} — {{ o.total_amount }}</li>
+              {% empty %}<li class="text-muted">None</li>{% endfor %}
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h6>Credits</h6>
+            <ul class="small">
+              {% for c in statement_data.credits %}
+              <li>{{ c.code }} — {{ c.created_at|date:'Y-m-d' }}</li>
+              {% empty %}<li class="text-muted">None</li>{% endfor %}
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h6>Payments</h6>
+            <ul class="small">
+              {% for p in statement_data.payments %}
+              <li>{{ p.payment_date|date:'Y-m-d' }} — {{ p.amount }} {{ p.currency }}</li>
+              {% empty %}<li class="text-muted">None</li>{% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

@@ -1,43 +1,75 @@
-from reportlab.pdfgen import canvas
-from io import BytesIO
+import subprocess
+import shutil
+from django.template.loader import render_to_string
 from django.core.files.base import ContentFile
-from orders.models import Order
-from customers.models import Customer, Branch
-from .models import Invoice, AccountStatement
+import tempfile
+import os
+from io import BytesIO
 from django.db.models import Q
+from reportlab.pdfgen import canvas
+from customers.models import Branch
+from orders.models import Order
+from django.conf import settings
 
 def generate_invoice_pdf(invoice):
-    order = invoice.order
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer)
-    p.setFont("Helvetica", 20)
-    p.drawString(100, 800, "Zahara Flowers Invoice")
+    """Generate invoice PDF. Prefer wkhtmltopdf; fall back to ReportLab if unavailable."""
+    static_base = ''
+    try:
+        # Build a file:// URL for wkhtmltopdf to load local static assets
+        static_dir = os.path.join(settings.BASE_DIR, 'static')
+        static_base = 'file:///' + static_dir.replace('\\', '/')
+    except Exception:
+        static_base = ''
 
-    p.setFont("Helvetica", 12)
-    p.drawString(100, 770, f"Date: {order.date}")
-    p.drawString(100, 750, f"Invoice Code: {order.invoice_code}")
-    p.drawString(100, 730, f"Customer: {order.customer.name}")
-    if order.branch:
-        p.drawString(100, 710, f"Branch: {order.branch.name}")
-    y = 690
-    for item in order.items.all():
-        p.drawString(100, y, f"Product: {item.product.name}")
-        p.drawString(100, y-20, f"Boxes: {item.boxes}")
-        p.drawString(100, y-40, f"Stems per Box: {item.stems_per_box}")
-        p.drawString(100, y-60, f"Total Stems: {item.stems}")
-        p.drawString(100, y-80, f"Price per Stem: {item.price_per_stem} {order.currency}")
-        p.drawString(100, y-100, f"Item Total: {item.total_amount} {order.currency}")
-        y -= 120
-    p.drawString(100, y-20, f"Total Amount: {order.total_amount} {order.currency}")
-    if order.remarks:
-        p.drawString(100, y-40, f"Remarks: {order.remarks}")
+    html_string = render_to_string('invoice_pdf.html', {'invoice': invoice, 'static_base': static_base})
 
-    p.showPage()
-    p.save()
+    wkhtmltopdf_path = shutil.which('wkhtmltopdf')
+    html_file_path = None
+    pdf_file_path = None
 
-    buffer.seek(0)
-    invoice.pdf_file.save(f"{order.invoice_code}.pdf", ContentFile(buffer.read()))
-    buffer.close()
+    try:
+        if wkhtmltopdf_path:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as html_file:
+                html_file.write(html_string.encode('utf-8'))
+                html_file_path = html_file.name
+
+            pdf_file_path = html_file_path.replace('.html', '.pdf')
+            subprocess.run([wkhtmltopdf_path, '--enable-local-file-access', html_file_path, pdf_file_path], check=True)
+
+            with open(pdf_file_path, 'rb') as pdf_file:
+                invoice.pdf_file.save(f"{invoice.invoice_code}.pdf", ContentFile(pdf_file.read()))
+        else:
+            # Fallback with ReportLab minimal invoice
+            buffer = BytesIO()
+            p = canvas.Canvas(buffer)
+            p.setFont("Helvetica", 18)
+            p.drawString(72, 800, f"Invoice {invoice.invoice_code}")
+            p.setFont("Helvetica", 12)
+            p.drawString(72, 780, f"Date: {invoice.order.date.strftime('%Y-%m-%d')}")
+            p.drawString(72, 765, f"Customer: {invoice.order.customer.name}")
+            y = 740
+            p.drawString(72, y, "Items:")
+            y -= 20
+            for item in invoice.order.items.all():
+                line = f"- {item.product.name} | {item.stems} stems @ {item.price_per_stem} = {item.total_amount}"
+                p.drawString(90, y, line)
+                y -= 16
+                if y < 100:
+                    p.showPage()
+                    y = 800
+            p.drawString(72, y-10, f"Total: {invoice.order.total_amount} {invoice.order.currency}")
+            p.showPage()
+            p.save()
+
+            buffer.seek(0)
+            invoice.pdf_file.save(f"{invoice.invoice_code}.pdf", ContentFile(buffer.read()))
+            buffer.close()
+    finally:
+        # Cleanup temp files if created
+        if html_file_path and os.path.isfile(html_file_path):
+            os.remove(html_file_path)
+        if pdf_file_path and os.path.isfile(pdf_file_path):
+            os.remove(pdf_file_path)
 
 def generate_account_statement_pdf(statement):
     customer = statement.customer
