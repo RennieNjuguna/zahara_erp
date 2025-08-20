@@ -18,16 +18,17 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.4;
             color: #333;
-            background-color: #f9f9f9;
-            padding: 10px;
+            background-color: white;
+            padding: 0;
+            margin: 0;
             min-height: 100vh;
         }
 
         .invoice-container {
             width: 100%;
             margin: 0;
+            padding: 0;
             background: white;
-            padding: 40px;
             box-shadow: none;
         }
 
@@ -35,7 +36,7 @@
             width: 100%;
             margin-bottom: 40px;
             border-bottom: 2px solid #9A1D56;
-            padding-bottom: 20px;
+            padding: 40px 40px 20px 40px;
             overflow: hidden;
         }
 
@@ -84,8 +85,8 @@
             width: 100%;
             margin-bottom: 40px;
             background-color: #f8f8f8;
-            padding: 25px;
-            border-radius: 5px;
+            padding: 25px 40px;
+            border-radius: 0;
             overflow: hidden;
         }
 
@@ -140,13 +141,14 @@
             border-collapse: collapse;
             margin-bottom: 30px;
             table-layout: fixed;
+            padding: 0 40px;
         }
 
         .invoice-table th {
             background-color: #f0f0f0;
             color: #666;
             font-weight: bold;
-            padding: 15px 10px;
+            padding: 15px 8px;
             text-align: center;
             border-bottom: 2px solid #ddd;
             font-size: 12px;
@@ -154,7 +156,7 @@
         }
 
         .invoice-table td {
-            padding: 18px 10px;
+            padding: 18px 8px;
             border-bottom: 1px solid #eee;
             font-size: 14px;
         }
@@ -174,7 +176,7 @@
         .totals-section {
             width: 400px;
             margin-left: auto;
-            margin-right: 0;
+            margin-right: 40px;
             margin-top: 20px;
         }
 
@@ -220,7 +222,7 @@
         .footer {
             text-align: center;
             margin-top: 30px;
-            padding-top: 30px;
+            padding: 30px 40px 40px 40px;
             border-top: 1px solid #eee;
             color: #666;
             clear: both;
@@ -235,40 +237,6 @@
         .footer-website {
             font-size: 14px;
             color: #666;
-        }
-
-        @media (max-width: 600px) {
-            .invoice-container {
-                padding: 20px;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .location-info {
-                text-align: left;
-                margin-top: 20px;
-            }
-
-            .invoice-details {
-                flex-direction: column;
-            }
-
-            .invoice-right {
-                text-align: left;
-                margin-top: 20px;
-            }
-
-            .invoice-table {
-                font-size: 12px;
-            }
-
-            .invoice-table th,
-            .invoice-table td {
-                padding: 8px 4px;
-            }
         }
     </style>
 </head>
