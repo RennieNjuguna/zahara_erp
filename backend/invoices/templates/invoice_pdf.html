@@ -117,12 +117,12 @@
                 <!-- Subtotal -->
                 <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e5e7eb; font-size:14px;">
                     <span style="color:#374151;">Subtotal</span>
-                    <span style="font-weight:500;">{{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}</span>
+                    <span style="font-weight:500;">{{ invoice.order.currency }} {{ invoice.order.subtotal_amount|floatformat:2 }}</span>
                 </div>
 
                 <!-- Logistics -->
                 <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e5e7eb; font-size:14px;">
-                    <span style="color:#374151;">Logistics / Other Charges</span>
+                    <span style="color:#374151;">Logistics Cost ({{ invoice.order.currency }})</span>
                     <span style="font-weight:500;">{{ invoice.order.currency }} {{ invoice.order.logistics_cost|default_if_none:'0.00' }}</span>
                 </div>
 

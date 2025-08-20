@@ -91,6 +91,26 @@ function addRow() {
 // Start with one row
 addRow();
 
+// If editing an existing order, populate with existing items
+{% if order %}
+document.addEventListener('DOMContentLoaded', function() {
+    {% for item in order.items.all %}
+    addRow();
+    const lastRow = document.querySelector('#items-table tbody tr:last-child');
+    lastRow.querySelector('.item-product').value = '{{ item.product.id }}';
+    lastRow.querySelector('.item-stem').value = '{{ item.stem_length_cm }}';
+    lastRow.querySelector('input[name="item_boxes"]').value = '{{ item.boxes }}';
+    lastRow.querySelector('input[name="item_stems_per_box"]').value = '{{ item.stems_per_box }}';
+    lastRow.querySelector('.item-price').value = '{{ item.price_per_stem }}';
+    {% endfor %}
+    
+    // Remove the initial empty row if we have items
+    if ({{ order.items.count }} > 0) {
+        document.querySelector('#items-table tbody tr:first-child').remove();
+    }
+});
+{% endif %}
+
 document.getElementById('customer-select').addEventListener('change', function(){
   const id = this.value; if(!id) return;
   fetch(`/orders/get-branches/?customer_id=${id}`).then(r=>r.json()).then(list=>{

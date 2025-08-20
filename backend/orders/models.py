@@ -205,12 +205,16 @@ class Order(models.Model):
             total=Sum('credit_note_items__credit_amount')
         )['total'] or Decimal('0.00')
 
-        # Get total payments allocated to this order
+        # Outstanding amount is total amount minus payments and credits
         total_payments = self.new_payment_allocations.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
-        return self.total_amount - total_credits - total_payments
+        return self.total_amount - total_payments - total_credits
+
+    def subtotal_amount(self):
+        """Calculate subtotal amount (items only, excluding logistics)"""
+        return sum(item.total_amount for item in self.items.all())
 
     def mark_as_claim(self, reason="Bad Produce"):
         """Mark order as claim and create credit note"""
