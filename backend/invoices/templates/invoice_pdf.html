@@ -19,16 +19,16 @@
             line-height: 1.4;
             color: #333;
             background-color: #f9f9f9;
-            padding: 20px;
+            padding: 10px;
             min-height: 100vh;
         }
 
         .invoice-container {
-            max-width: 800px;
-            margin: 0 auto;
+            width: 100%;
+            margin: 0;
             background: white;
             padding: 40px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: none;
         }
 
         .header {
@@ -41,7 +41,7 @@
 
         .company-info {
             float: left;
-            width: 60%;
+            width: 65%;
         }
 
         .company-info h1 {
@@ -60,13 +60,13 @@
         .logo-placeholder {
             color: #666;
             font-size: 14px;
-            margin-right: 20px;
+            margin-right: 25px;
             float: left;
         }
 
         .location-info {
             float: right;
-            width: 35%;
+            width: 30%;
             text-align: right;
             color: #666;
             font-size: 14px;
@@ -84,29 +84,29 @@
             width: 100%;
             margin-bottom: 40px;
             background-color: #f8f8f8;
-            padding: 20px;
+            padding: 25px;
             border-radius: 5px;
             overflow: hidden;
         }
 
         .invoice-left {
-            width: 33%;
+            width: 32%;
             float: left;
-            padding-right: 15px;
+            padding-right: 20px;
         }
 
         .invoice-center {
-            width: 33%;
+            width: 32%;
             float: left;
-            padding-left: 15px;
-            padding-right: 15px;
+            padding-left: 20px;
+            padding-right: 20px;
         }
 
         .invoice-right {
-            width: 33%;
+            width: 32%;
             float: right;
             text-align: right;
-            padding-left: 15px;
+            padding-left: 20px;
         }
 
         .invoice-left h3, .invoice-center h3, .invoice-right h3 {
@@ -139,13 +139,14 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
+            table-layout: fixed;
         }
 
         .invoice-table th {
             background-color: #f0f0f0;
             color: #666;
             font-weight: bold;
-            padding: 12px 8px;
+            padding: 15px 10px;
             text-align: center;
             border-bottom: 2px solid #ddd;
             font-size: 12px;
@@ -153,7 +154,7 @@
         }
 
         .invoice-table td {
-            padding: 15px 8px;
+            padding: 18px 10px;
             border-bottom: 1px solid #eee;
             font-size: 14px;
         }
@@ -171,7 +172,7 @@
         }
 
         .totals-section {
-            width: 300px;
+            width: 400px;
             margin-left: auto;
             margin-right: 0;
             margin-top: 20px;
@@ -275,15 +276,13 @@
     <div class="invoice-container">
         <!-- Header -->
         <div class="header">
-            <div style="display: flex; align-items: flex-start;">
-                <div class="logo-placeholder">Logo</div>
-                <div class="company-info">
-                    <h1>Zahara Flowers Ltd</h1>
-                    <div class="company-details">
-                        www.zaharaflowers.com<br>
-                        info@zaharaflowers.com<br>
-                        +254 725 750 057
-                    </div>
+            <div class="logo-placeholder">Logo</div>
+            <div class="company-info">
+                <h1>Zahara Flowers Ltd</h1>
+                <div class="company-details">
+                    www.zaharaflowers.com<br>
+                    info@zaharaflowers.com<br>
+                    +254 725 750 057
                 </div>
             </div>
             <div class="location-info">
