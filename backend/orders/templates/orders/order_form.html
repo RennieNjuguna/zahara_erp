@@ -38,14 +38,6 @@
     </div>
     <hr class="my-4">
     <h5 class="mb-3">Items</h5>
-    {% if order %}
-        <div class="alert alert-info">
-            <strong>Debug Info:</strong> Order ID: {{ order.id }}, Items Count: {{ order.items.count }}
-            {% for item in order.items.all %}
-                <br>- {{ item.product.name }}: {{ item.stems }} stems @ {{ item.price_per_stem }}
-            {% endfor %}
-        </div>
-    {% endif %}
     <div class="table-responsive">
       <table class="table align-middle" id="items-table">
         <thead>
@@ -105,11 +97,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Editing existing order with items - load existing items
         {% for item in order.items.all %}
         const row = addRow();
-        row.querySelector('.item-product').value = '{{ item.product.id }}';
-        row.querySelector('.item-stem').value = '{{ item.stem_length_cm }}';
-        row.querySelector('input[name="item_boxes"]').value = '{{ item.boxes }}';
-        row.querySelector('input[name="item_stems_per_box"]').value = '{{ item.stems_per_box }}';
-        row.querySelector('.item-price').value = '{{ item.price_per_stem }}';
+        // Ensure the row is properly created before setting values
+        if (row) {
+            const productSelect = row.querySelector('.item-product');
+            const stemInput = row.querySelector('.item-stem');
+            const boxesInput = row.querySelector('input[name="item_boxes"]');
+            const stemsPerBoxInput = row.querySelector('input[name="item_stems_per_box"]');
+            const priceInput = row.querySelector('.item-price');
+            
+            if (productSelect) productSelect.value = '{{ item.product.id }}';
+            if (stemInput) stemInput.value = '{{ item.stem_length_cm }}';
+            if (boxesInput) boxesInput.value = '{{ item.boxes }}';
+            if (stemsPerBoxInput) stemsPerBoxInput.value = '{{ item.stems_per_box }}';
+            if (priceInput) priceInput.value = '{{ item.price_per_stem }}';
+        }
         {% endfor %}
     {% else %}
         // Creating new order or editing order without items - start with one empty row
