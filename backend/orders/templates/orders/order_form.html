@@ -105,15 +105,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Editing existing order with items - load existing items
         {% for item in order.items.all %}
         console.log('Processing item: {{ item.product.name }}');
-        const row = addRow();
-        console.log('Row created:', row);
+        const row_{{ forloop.counter }} = addRow();
+        console.log('Row created:', row_{{ forloop.counter }});
         // Ensure the row is properly created before setting values
-        if (row) {
-            const productSelect = row.querySelector('.item-product');
-            const stemInput = row.querySelector('.item-stem');
-            const boxesInput = row.querySelector('input[name="item_boxes"]');
-            const stemsPerBoxInput = row.querySelector('input[name="item_stems_per_box"]');
-            const priceInput = row.querySelector('.item-price');
+        if (row_{{ forloop.counter }}) {
+            const productSelect = row_{{ forloop.counter }}.querySelector('.item-product');
+            const stemInput = row_{{ forloop.counter }}.querySelector('.item-stem');
+            const boxesInput = row_{{ forloop.counter }}.querySelector('input[name="item_boxes"]');
+            const stemsPerBoxInput = row_{{ forloop.counter }}.querySelector('input[name="item_stems_per_box"]');
+            const priceInput = row_{{ forloop.counter }}.querySelector('.item-price');
             
             console.log('Found elements:', { productSelect, stemInput, boxesInput, stemsPerBoxInput, priceInput });
             
