@@ -12,23 +12,30 @@ from orders.models import Order
 from django.conf import settings
 
 def generate_invoice_pdf(invoice):
-    """Generate invoice PDF. Prefer wkhtmltopdf; fall back to ReportLab if unavailable."""
-    static_base = ''
-    try:
-        # Build a file:// URL for wkhtmltopdf to load local static assets
-        static_dir = os.path.join(settings.BASE_DIR, 'static')
-        static_base = 'file:///' + static_dir.replace('\\', '/')
-    except Exception:
-        static_base = ''
+    """Generate PDF for an invoice using wkhtmltopdf with ReportLab fallback"""
+    from django.template.loader import render_to_string
+    from django.conf import settings
+    import tempfile
+    import os
+    import shutil
+    import subprocess
+    from django.core.files.base import ContentFile
 
-    html_string = render_to_string('invoice_pdf.html', {'invoice': invoice, 'static_base': static_base})
+    # Render the HTML template
+    context = {
+        'invoice': invoice,
+        'static_base': f'file:///{os.path.join(settings.BASE_DIR, "static").replace(os.sep, "/")}'
+    }
+    html_string = render_to_string('invoice_pdf.html', context)
 
+    # Check if wkhtmltopdf is available
     wkhtmltopdf_path = shutil.which('wkhtmltopdf')
     html_file_path = None
     pdf_file_path = None
 
     try:
         if wkhtmltopdf_path:
+            # Use wkhtmltopdf
             with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as html_file:
                 html_file.write(html_string.encode('utf-8'))
                 html_file_path = html_file.name

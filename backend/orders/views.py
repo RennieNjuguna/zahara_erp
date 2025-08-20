@@ -96,9 +96,10 @@ def order_create(request):
 
 
 def order_edit(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
+    order = get_object_or_404(Order.objects.prefetch_related('items__product'), id=order_id)
     customers = Customer.objects.all().order_by('name')
     products = Product.objects.all().order_by('name')
+
     if request.method == 'POST':
         try:
             order.customer_id = int(request.POST.get('customer'))
@@ -108,6 +109,34 @@ def order_edit(request, order_id):
             order.logistics_provider = request.POST.get('logistics_provider')
             logistics_cost = request.POST.get('logistics_cost') or None
             order.logistics_cost = Decimal(logistics_cost) if logistics_cost else None
+
+            # Clear existing items and recreate from form data
+            order.items.all().delete()
+
+            # Create new items from arrays in the form
+            product_ids = request.POST.getlist('item_product')
+            stem_lengths = request.POST.getlist('item_stem_length_cm')
+            boxes_list = request.POST.getlist('item_boxes')
+            stems_per_box_list = request.POST.getlist('item_stems_per_box')
+            price_list = request.POST.getlist('item_price_per_stem')
+
+            if product_ids and any((pid or '').strip() for pid in product_ids):
+                for idx, pid in enumerate(product_ids):
+                    pid = (pid or '').strip()
+                    if not pid:
+                        continue
+                    try:
+                        order.items.create(
+                            product_id=int(pid),
+                            stem_length_cm=int(stem_lengths[idx] or 0),
+                            boxes=int(boxes_list[idx] or 0),
+                            stems_per_box=int(stems_per_box_list[idx] or 0),
+                            price_per_stem=Decimal(price_list[idx] or '0'),
+                        )
+                    except Exception:
+                        # Skip malformed rows without aborting order update
+                        continue
+
             order.save()
             messages.success(request, 'Order updated.')
             return redirect('orders:order_detail', order_id=order.id)

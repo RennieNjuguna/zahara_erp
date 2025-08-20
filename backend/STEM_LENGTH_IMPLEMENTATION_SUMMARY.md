@@ -157,3 +157,4 @@ price = CustomerProductPrice.objects.create(
 - Input validation on stem length fields (positive integers only)
 - Price fields use DecimalField for precision
 
+
