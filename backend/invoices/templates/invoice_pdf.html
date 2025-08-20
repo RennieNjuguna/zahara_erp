@@ -21,8 +21,6 @@
             background-color: #f9f9f9;
             padding: 20px;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
 
         .invoice-container {
@@ -31,18 +29,19 @@
             background: white;
             padding: 40px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            width: 100%;
             margin-bottom: 40px;
             border-bottom: 2px solid #9A1D56;
             padding-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .company-info {
+            float: left;
+            width: 60%;
         }
 
         .company-info h1 {
@@ -50,10 +49,6 @@
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 10px;
-        }
-
-        .company-info {
-            flex: 1;
         }
 
         .company-details {
@@ -66,26 +61,52 @@
             color: #666;
             font-size: 14px;
             margin-right: 20px;
+            float: left;
         }
 
         .location-info {
+            float: right;
+            width: 35%;
             text-align: right;
             color: #666;
             font-size: 14px;
             line-height: 1.6;
         }
 
+        /* Clear the float */
+        .header::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
         .invoice-details {
-            display: flex;
-            justify-content: space-between;
+            width: 100%;
             margin-bottom: 40px;
             background-color: #f8f8f8;
             padding: 20px;
             border-radius: 5px;
+            overflow: hidden;
         }
 
-        .invoice-left, .invoice-center, .invoice-right {
-            flex: 1;
+        .invoice-left {
+            width: 33%;
+            float: left;
+            padding-right: 15px;
+        }
+
+        .invoice-center {
+            width: 33%;
+            float: left;
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        .invoice-right {
+            width: 33%;
+            float: right;
+            text-align: right;
+            padding-left: 15px;
         }
 
         .invoice-left h3, .invoice-center h3, .invoice-right h3 {
@@ -93,10 +114,6 @@
             font-size: 16px;
             margin-bottom: 10px;
             font-weight: bold;
-        }
-
-        .invoice-right {
-            text-align: right;
         }
 
         .invoice-amount {
@@ -109,6 +126,13 @@
             color: #666;
             font-size: 14px;
             line-height: 1.6;
+        }
+
+        /* Clear the float */
+        .invoice-details::after {
+            content: "";
+            display: table;
+            clear: both;
         }
 
         .invoice-table {
@@ -147,16 +171,30 @@
         }
 
         .totals-section {
-            margin-left: auto;
             width: 300px;
+            margin-left: auto;
+            margin-right: 0;
             margin-top: 20px;
         }
 
         .totals-row {
-            display: flex;
-            justify-content: space-between;
+            width: 100%;
             padding: 8px 0;
             border-bottom: 1px solid #eee;
+            overflow: hidden;
+        }
+
+        .totals-row span:first-child {
+            float: left;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .totals-row span:last-child {
+            float: right;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
         }
 
         .totals-row.total {
@@ -166,12 +204,25 @@
             margin-top: 10px;
         }
 
+        .totals-row.total span:last-child {
+            color: #9A1D56;
+            font-size: 18px;
+        }
+
+        /* Clear the float */
+        .totals-row::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
         .footer {
             text-align: center;
-            margin-top: auto;
+            margin-top: 30px;
             padding-top: 30px;
             border-top: 1px solid #eee;
             color: #666;
+            clear: both;
         }
 
         .footer-tagline {
