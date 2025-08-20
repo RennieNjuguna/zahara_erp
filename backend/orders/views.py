@@ -100,11 +100,6 @@ def order_edit(request, order_id):
     customers = Customer.objects.all().order_by('name')
     products = Product.objects.all().order_by('name')
     
-    # Debug: Print order items to console
-    print(f"DEBUG: Order {order.id} has {order.items.count()} items")
-    for item in order.items.all():
-        print(f"DEBUG: Item {item.id}: {item.product.name} - {item.stems} stems @ {item.price_per_stem}")
-    
     if request.method == 'POST':
         try:
             order.customer_id = int(request.POST.get('customer'))

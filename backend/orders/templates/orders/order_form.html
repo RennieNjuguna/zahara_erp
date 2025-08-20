@@ -101,13 +101,9 @@ function addRow() {
 
 // Initialize the form
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, order:', {% if order %}'{{ order.id }}'{% else %}null{% endif %});
-    
-    {% if order %}
-        console.log('Loading existing order items...');
-        // Editing existing order - load existing items
+    {% if order and order.items.count > 0 %}
+        // Editing existing order with items - load existing items
         {% for item in order.items.all %}
-        console.log('Adding item: {{ item.product.name }}');
         const row = addRow();
         row.querySelector('.item-product').value = '{{ item.product.id }}';
         row.querySelector('.item-stem').value = '{{ item.stem_length_cm }}';
@@ -115,10 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
         row.querySelector('input[name="item_stems_per_box"]').value = '{{ item.stems_per_box }}';
         row.querySelector('.item-price').value = '{{ item.price_per_stem }}';
         {% endfor %}
-        console.log('Finished loading {{ order.items.count }} items');
     {% else %}
-        console.log('Creating new order, adding empty row');
-        // Creating new order - start with one empty row
+        // Creating new order or editing order without items - start with one empty row
         addRow();
     {% endif %}
 });
