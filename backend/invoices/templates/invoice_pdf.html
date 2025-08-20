@@ -3,290 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice {{ invoice.invoice_code }}</title>
+    <title>Invoice {{ invoice.invoice_code }} - Zahara Flowers Ltd</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @page {
-            size: A4;
-            margin: 15mm;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #333;
-            background: white;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.4;
+            color: #333;
+            background-color: #f9f9f9;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #9A1D56;
             padding-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
         }
-        
+
+        .company-info h1 {
+            color: #9A1D56;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
         .company-info {
             flex: 1;
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
         }
-        
-        .logo-placeholder {
-            width: 80px;
-            height: 80px;
-            background: #f0f0f0;
-            border: 2px dashed #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 12px;
-            border-radius: 8px;
-            flex-shrink: 0;
-        }
-        
-        .company-details-wrapper {
-            flex: 1;
-        }
-        
-        .company-name {
-            font-size: 28px;
-            font-weight: 700;
-            color: #8B5CF6;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
-        
+
         .company-details {
             color: #666;
             font-size: 14px;
             line-height: 1.6;
         }
-        
-        .client-info {
+
+        .logo-placeholder {
+            color: #666;
+            font-size: 14px;
+            margin-right: 20px;
+        }
+
+        .location-info {
             text-align: right;
             color: #666;
             font-size: 14px;
             line-height: 1.6;
         }
-        
+
         .invoice-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-radius: 5px;
         }
-        
-        .invoice-left {
-            grid-column: 1;
+
+        .invoice-left, .invoice-center, .invoice-right {
+            flex: 1;
         }
-        
-        .invoice-middle {
-            grid-column: 2;
+
+        .invoice-left h3, .invoice-center h3, .invoice-right h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-weight: bold;
         }
-        
+
         .invoice-right {
-            grid-column: 3;
             text-align: right;
         }
-        
-        .invoice-box {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .invoice-title {
-            font-size: 16px;
-            color: #666;
-            margin-bottom: 8px;
-        }
-        
+
         .invoice-amount {
+            color: #9A1D56;
             font-size: 32px;
-            font-weight: 700;
-            color: #8B5CF6;
-            margin: 0;
+            font-weight: bold;
         }
-        
-        .invoice-number {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-        }
-        
-        .invoice-date {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        
-        .consignee-details {
-            margin-bottom: 20px;
-        }
-        
-        .consignee-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        
-        .consignee-branch {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .account-details {
-            text-align: left;
-        }
-        
-        .account-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 12px;
-        }
-        
-        .account-info {
+
+        .details-text {
             color: #666;
             font-size: 14px;
             line-height: 1.6;
-            margin-bottom: 4px;
         }
-        
-        .items-table {
+
+        .invoice-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
         }
 
-        .items-table th {
-            background: #f8f9fa;
+        .invoice-table th {
+            background-color: #f0f0f0;
+            color: #666;
+            font-weight: bold;
             padding: 12px 8px;
-            text-align: left;
-            font-weight: 600;
-            color: #333;
-            font-size: 13px;
-            border-bottom: 2px solid #e9ecef;
+            text-align: center;
+            border-bottom: 2px solid #ddd;
+            font-size: 12px;
+            text-transform: uppercase;
         }
 
-        .items-table td {
-            padding: 12px 8px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 13px;
-            color: #333;
+        .invoice-table td {
+            padding: 15px 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
         }
 
-        .items-table th:last-child,
-        .items-table td:last-child {
+        .invoice-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .text-right {
             text-align: right;
         }
 
-        .items-table th:nth-child(2),
-        .items-table th:nth-child(3),
-        .items-table th:nth-child(4),
-        .items-table th:nth-child(5),
-        .items-table th:nth-child(6) {
+        .text-center {
             text-align: center;
         }
 
-        .items-table td:nth-child(2),
-        .items-table td:nth-child(3),
-        .items-table td:nth-child(4),
-        .items-table td:nth-child(5),
-        .items-table td:nth-child(6) {
-            text-align: center;
-        }
-        
         .totals-section {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 40px;
-            padding-right: 0;
-        }
-        
-        .totals-box {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-left: auto;
             width: 300px;
-            margin-right: 0;
+            margin-top: 20px;
         }
-        
-        .total-row {
+
+        .totals-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid #eee;
         }
-        
-        .total-row:last-child {
-            border-bottom: none;
-            border-top: 2px solid #333;
-            font-weight: 700;
+
+        .totals-row.total {
+            border-bottom: 2px solid #333;
+            font-weight: bold;
             font-size: 16px;
-            color: #333;
-            padding-top: 12px;
-        }
-        
-        .total-label {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .total-amount {
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .total-row:last-child .total-amount {
-            color: #8B5CF6;
-            font-size: 18px;
+            margin-top: 10px;
         }
 
         .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
             text-align: center;
-            background: white;
-            padding: 20px 0;
-            border-top: 1px solid #f0f0f0;
+            margin-top: auto;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+            color: #666;
         }
 
         .footer-tagline {
-            font-weight: 600;
-            font-size: 18px;
+            font-size: 16px;
+            margin-bottom: 10px;
             color: #333;
-            margin-bottom: 8px;
         }
 
         .footer-website {
-            color: #666;
             font-size: 14px;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            .invoice-container {
+                padding: 20px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .location-info {
+                text-align: left;
+                margin-top: 20px;
+            }
+
+            .invoice-details {
+                flex-direction: column;
+            }
+
+            .invoice-right {
+                text-align: left;
+                margin-top: 20px;
+            }
+
+            .invoice-table {
+                font-size: 12px;
+            }
+
+            .invoice-table th,
+            .invoice-table td {
+                padding: 8px 4px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- HEADER -->
+    <div class="invoice-container">
+        <!-- Header -->
         <div class="header">
-            <div class="company-info">
+            <div style="display: flex; align-items: flex-start;">
                 <div class="logo-placeholder">Logo</div>
-                <div class="company-details-wrapper">
-                    <div class="company-name">Zahara Flowers Ltd</div>
+                <div class="company-info">
+                    <h1>Zahara Flowers Ltd</h1>
                     <div class="company-details">
                         www.zaharaflowers.com<br>
                         info@zaharaflowers.com<br>
@@ -294,101 +235,102 @@
                     </div>
                 </div>
             </div>
-            <div class="client-info">
+            <div class="location-info">
                 Nakuru & Laikipia, Kenya<br>
                 TAX ID P052064981H
             </div>
         </div>
 
-        <!-- INVOICE DETAILS -->
+        <!-- Invoice Details -->
         <div class="invoice-details">
             <div class="invoice-left">
-                <div class="invoice-number">#{{ invoice.invoice_code }}</div>
-                <div class="invoice-date">{{ invoice.order.date|date:'d M, Y' }}</div>
-                <div class="consignee-details">
-                    <div class="consignee-name">{{ invoice.order.customer.name }}</div>
-                    {% if invoice.order.branch %}
-                    <div class="consignee-branch">Branch: {{ invoice.order.branch.name }}</div>
-                    {% endif %}
+                <h3>Invoice number</h3>
+                <div class="details-text">#{{ invoice.invoice_code }}</div>
+                <br>
+                <h3>Invoice date</h3>
+                <div class="details-text">{{ invoice.order.date|date:'d M, Y' }}</div>
+                <br>
+                <h3>Consignee Details</h3>
+                <div class="details-text">
+                    {{ invoice.order.customer.name }}<br>
+                    {% if invoice.order.branch %}Branch: {{ invoice.order.branch.name }}{% endif %}
                 </div>
             </div>
-            <div class="invoice-middle">
-                <div class="account-details">
-                    <div class="account-title">Account Details</div>
+
+            <div class="invoice-center">
+                <h3>Account Details</h3>
+                <div class="details-text">
                     {% if invoice.order.currency == 'EUR' %}
-                        <div class="account-info">Acc No: (EURO Ac) 0112397355002</div>
+                        <strong>Acc No:</strong> (EURO Ac) 0112397355002<br>
                     {% elif invoice.order.currency == 'USD' %}
-                        <div class="account-info">Acc No: (USD Acc) 0112397355003</div>
+                        <strong>Acc No:</strong> (USD Acc) 0112397355003<br>
                     {% elif invoice.order.currency == 'KSH' %}
-                        <div class="account-info">Acc No: (Ksh Acc.) 0112397355001</div>
+                        <strong>Acc No:</strong> (Ksh Acc.) 0112397355001<br>
                     {% else %}
-                        <div class="account-info">Acc No: (USD Acc) 0112397355003</div>
+                        <strong>Acc No:</strong> (USD Acc) 0112397355003<br>
                     {% endif %}
-                    <div class="account-info">Bank Name: SBM Bank</div>
-                    <div class="account-info">Swift Code: SBMKKENAXXX</div>
-                    <div class="account-info">Bank Code: 60</div>
-                    <div class="account-info">Branch Code: 011</div>
+                    <strong>Bank Name:</strong> SBM Bank<br>
+                    <strong>Swift Code:</strong> SBMKKENAXXX<br>
+                    <strong>Bank Code:</strong> 60<br>
+                    <strong>Branch Code:</strong> 011
                 </div>
             </div>
+
             <div class="invoice-right">
-                <div class="invoice-box">
-                    <div class="invoice-title">Invoice of ({{ invoice.order.currency }})</div>
-                    <div class="invoice-amount">{{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}</div>
-                </div>
+                <h3>Invoice of ({{ invoice.order.currency }})</h3>
+                <div class="invoice-amount">{{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}</div>
             </div>
         </div>
 
-        <!-- ITEMS TABLE -->
-        <table class="items-table">
+        <!-- Items Table -->
+        <table class="invoice-table">
             <thead>
                 <tr>
-                    <th>ITEM DETAIL</th>
-                    <th>LENGTH (CM)</th>
-                    <th>STEMS PER BOX</th>
-                    <th>NUMBER OF BOXES</th>
-                    <th>TOTAL NUMBER OF STEMS</th>
-                    <th>PRICE PER STEM</th>
-                    <th>AMOUNT</th>
+                    <th>Item Detail</th>
+                    <th class="text-center">Length (CM)</th>
+                    <th class="text-center">Stems Per Box</th>
+                    <th class="text-center">Number of Boxes</th>
+                    <th class="text-center">Total Number of Stems</th>
+                    <th class="text-right">Price Per Stem</th>
+                    <th class="text-right">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in invoice.order.items.all %}
                 <tr>
                     <td>{{ item.product.name }}</td>
-                    <td>{{ item.stem_length_cm }}</td>
-                    <td>{{ item.stems_per_box }}</td>
-                    <td>{{ item.boxes }}</td>
-                    <td>{{ item.stems }}</td>
-                    <td>{{ invoice.order.currency }} {{ item.price_per_stem }}</td>
-                    <td>{{ invoice.order.currency }} {{ item.total_amount }}</td>
+                    <td class="text-center">{{ item.stem_length_cm }}</td>
+                    <td class="text-center">{{ item.stems_per_box }}</td>
+                    <td class="text-center">{{ item.boxes }}</td>
+                    <td class="text-center">{{ item.stems }}</td>
+                    <td class="text-right">{{ invoice.order.currency }} {{ item.price_per_stem }}</td>
+                    <td class="text-right">{{ invoice.order.currency }} {{ item.total_amount }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <!-- TOTALS -->
+        <!-- Totals -->
         <div class="totals-section">
-            <div class="totals-box">
-                <div class="total-row">
-                    <span class="total-label">Subtotal ({{ invoice.order.currency }})</span>
-                    <span class="total-amount">{{ invoice.order.currency }} {{ invoice.order.subtotal_amount|floatformat:2 }}</span>
-                </div>
-                <div class="total-row">
-                    <span class="total-label">Logistics / Other Costs ({{ invoice.order.currency }})</span>
-                    <span class="total-amount">{{ invoice.order.currency }} {{ invoice.order.logistics_cost|default_if_none:'0.00' }}</span>
-                </div>
-                <div class="total-row">
-                    <span class="total-label">Total</span>
-                    <span class="total-amount">{{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}</span>
-                </div>
+            <div class="totals-row">
+                <span>Subtotal ({{ invoice.order.currency }})</span>
+                <span>{{ invoice.order.currency }} {{ invoice.order.subtotal_amount|floatformat:2 }}</span>
+            </div>
+            <div class="totals-row">
+                <span>Logistics / Other Costs ({{ invoice.order.currency }})</span>
+                <span>{{ invoice.order.currency }} {{ invoice.order.logistics_cost|default_if_none:'0.00' }}</span>
+            </div>
+            <div class="totals-row total">
+                <span>Total</span>
+                <span>{{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}</span>
             </div>
         </div>
-    </div>
 
-    <!-- FOOTER -->
-    <div class="footer">
-        <div class="footer-tagline">We bloom for you</div>
-        <div class="footer-website">www.zaharaflowers.com</div>
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-tagline">We bloom for you</div>
+            <div class="footer-website">www.zaharaflowers.com</div>
+        </div>
     </div>
 </body>
 </html>
