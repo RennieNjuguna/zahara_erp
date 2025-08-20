@@ -93,10 +93,20 @@ function addRow() {
 
 // Initialize the form
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, checking for existing order items...');
+    console.log('Order exists:', {% if order %}true{% else %}false{% endif %});
+    {% if order %}
+    console.log('Order ID:', {{ order.id }});
+    console.log('Items count:', {{ order.items.count }});
+    {% endif %}
+    
     {% if order and order.items.count > 0 %}
+        console.log('Loading existing order items...');
         // Editing existing order with items - load existing items
         {% for item in order.items.all %}
+        console.log('Processing item: {{ item.product.name }}');
         const row = addRow();
+        console.log('Row created:', row);
         // Ensure the row is properly created before setting values
         if (row) {
             const productSelect = row.querySelector('.item-product');
@@ -105,14 +115,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const stemsPerBoxInput = row.querySelector('input[name="item_stems_per_box"]');
             const priceInput = row.querySelector('.item-price');
             
+            console.log('Found elements:', { productSelect, stemInput, boxesInput, stemsPerBoxInput, priceInput });
+            
             if (productSelect) productSelect.value = '{{ item.product.id }}';
             if (stemInput) stemInput.value = '{{ item.stem_length_cm }}';
             if (boxesInput) boxesInput.value = '{{ item.boxes }}';
             if (stemsPerBoxInput) stemsPerBoxInput.value = '{{ item.stems_per_box }}';
             if (priceInput) priceInput.value = '{{ item.price_per_stem }}';
+            
+            console.log('Values set for {{ item.product.name }}');
         }
         {% endfor %}
+        console.log('Finished loading existing items');
     {% else %}
+        console.log('Creating new order or editing order without items - adding empty row');
         // Creating new order or editing order without items - start with one empty row
         addRow();
     {% endif %}
