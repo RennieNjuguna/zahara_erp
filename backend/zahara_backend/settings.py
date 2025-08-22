@@ -45,7 +45,7 @@ INSTALLED_APPS = [
 
     # Your apps
     'customers',
-    'products',
+    'products.apps.ProductsConfig',
     'orders',
     'employees',
     'invoices.apps.InvoicesConfig',
