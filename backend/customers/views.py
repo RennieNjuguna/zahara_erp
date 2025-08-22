@@ -224,3 +224,30 @@ def branch_delete(request, branch_id):
         'branch': branch,
     }
     return render(request, 'customers/branch_confirm_delete.html', context)
+
+
+def quick_branch_create(request):
+    """Create a new branch quickly from the customer list page"""
+    if request.method == 'POST':
+        customer_id = request.POST.get('customer_id')
+        name = request.POST.get('name')
+        short_code = request.POST.get('short_code')
+        
+        if customer_id and name and short_code:
+            try:
+                customer = Customer.objects.get(id=customer_id)
+                branch = Branch.objects.create(
+                    customer=customer,
+                    name=name,
+                    short_code=short_code
+                )
+                messages.success(request, f'Branch "{branch.name}" created successfully for {customer.name}!')
+                return redirect('customers:customer_list')
+            except Customer.DoesNotExist:
+                messages.error(request, 'Customer not found.')
+            except Exception as e:
+                messages.error(request, f'Error creating branch: {str(e)}')
+        else:
+            messages.error(request, 'All fields are required.')
+    
+    return redirect('customers:customer_list')

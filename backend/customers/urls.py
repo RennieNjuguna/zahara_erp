@@ -15,4 +15,5 @@ urlpatterns = [
     path('<int:customer_id>/branches/create/', views.branch_create, name='branch_create'),
     path('branches/<int:branch_id>/edit/', views.branch_edit, name='branch_edit'),
     path('branches/<int:branch_id>/delete/', views.branch_delete, name='branch_delete'),
+    path('quick-branch/', views.quick_branch_create, name='quick_branch_create'),
 ]

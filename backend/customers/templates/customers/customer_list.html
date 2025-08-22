@@ -10,9 +10,24 @@
             <h1 class="h3 mb-0">Customers</h1>
             <p class="text-muted">Manage your customer database</p>
         </div>
-        <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Customer
-        </a>
+        <div class="btn-group" role="group">
+            <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Customer
+            </a>
+            <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><h6 class="dropdown-header">Quick Actions</h6></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#quickBranchModal">
+                        <i class="bi bi-building-add text-success"></i> Quick Add Branch
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <!-- Search and Filters -->
@@ -126,16 +141,24 @@
                             <td>
                                 <div class="btn-group" role="group">
                                     <a href="{% url 'customers:customer_detail' customer.id %}" 
-                                       class="btn btn-sm btn-outline-primary">
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="View Customer">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     <a href="{% url 'customers:customer_edit' customer.id %}" 
-                                       class="btn btn-sm btn-outline-secondary">
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Edit Customer">
                                         <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'customers:branch_create' customer.id %}" 
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Quick Add Branch">
+                                        <i class="bi bi-building-add"></i>
                                     </a>
                                     <button type="button" class="btn btn-sm btn-outline-danger" 
                                             data-bs-toggle="modal" 
-                                            data-bs-target="#deleteModal{{ customer.id }}">
+                                            data-bs-target="#deleteModal{{ customer.id }}"
+                                            title="Delete Customer">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -213,6 +236,48 @@
         </ul>
     </nav>
     {% endif %}
+</div>
+
+<!-- Quick Add Branch Modal -->
+<div class="modal fade" id="quickBranchModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-building-add text-success"></i> Quick Add Branch
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickBranchForm" method="post" action="{% url 'customers:quick_branch_create' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="customerSelect" class="form-label">Select Customer <span class="text-danger">*</span></label>
+                        <select class="form-select" id="customerSelect" name="customer_id" required>
+                            <option value="">Choose customer...</option>
+                            {% for customer in page_obj %}
+                            <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.short_code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="branchName" class="form-label">Branch Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="branchName" name="name" required placeholder="Enter branch name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="branchCode" class="form-label">Short Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="branchCode" name="short_code" required placeholder="Enter short code" maxlength="10">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="quickBranchForm" class="btn btn-success">
+                    <i class="bi bi-building-add"></i> Create Branch
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Delete Modals -->
