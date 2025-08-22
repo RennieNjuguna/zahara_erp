@@ -158,3 +158,4 @@ price = CustomerProductPrice.objects.create(
 - Price fields use DecimalField for precision
 
 
+
