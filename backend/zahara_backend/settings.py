@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'orders',
     'employees',
     'invoices.apps.InvoicesConfig',
+    'expenses.apps.ExpensesConfig',
     'payments',
 ]
 

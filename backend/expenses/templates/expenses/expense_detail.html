@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ expense.name }} - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ expense.name }}</h1>
+            <p class="text-muted">Expense details and information</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{% url 'expenses:expense_edit' expense.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil"></i> Edit Expense
+            </a>
+            <a href="{% url 'expenses:expense_list' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Back to Expenses
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0">Expense Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Amount:</strong> {{ expense.amount }} {{ expense.currency }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ expense.status }}">{{ expense.get_status_display }}</span>
+                            </p>
+                            <p><strong>Date Incurred:</strong> {{ expense.date_incurred|date:"M d, Y" }}</p>
+                            <p><strong>Created:</strong> {{ expense.created_at|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Category:</strong> 
+                                {% if expense.category %}
+                                <span class="badge bg-primary">{{ expense.category.name }}</span>
+                                {% else %}
+                                <span class="text-muted">No category</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Reference:</strong> 
+                                {% if expense.reference_number %}
+                                {{ expense.reference_number }}
+                                {% else %}
+                                <span class="text-muted">No reference</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Vendor:</strong> 
+                                {% if expense.vendor_name %}
+                                {{ expense.vendor_name }}
+                                {% else %}
+                                <span class="text-muted">No vendor</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Created By:</strong> 
+                                {% if expense.created_by %}
+                                {{ expense.created_by }}
+                                {% else %}
+                                <span class="text-muted">Unknown</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if expense.description %}
+                    <hr>
+                    <p><strong>Description:</strong></p>
+                    <p>{{ expense.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0">Attachments</h6>
+                </div>
+                <div class="card-body">
+                    {% if expense.attachments.count > 0 %}
+                        {% for attachment in expense.attachments.all %}
+                        <div class="mb-2">
+                            <a href="{{ attachment.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-file-earmark"></i> {{ attachment.original_filename }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No attachments</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
