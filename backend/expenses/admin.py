@@ -22,7 +22,7 @@ class ExpenseCategoryAdmin(admin.ModelAdmin):
     search_fields = ['name', 'description']
     readonly_fields = ['created_at', 'updated_at']
     ordering = ['name']
-    
+
     def color_display(self, obj):
         """Display color as a colored square"""
         return format_html(
@@ -30,7 +30,7 @@ class ExpenseCategoryAdmin(admin.ModelAdmin):
             obj.color, obj.color
         )
     color_display.short_description = 'Color'
-    
+
     def expense_count(self, obj):
         """Count of expenses in this category"""
         return obj.expenses.count()
@@ -41,11 +41,11 @@ class ExpenseCategoryAdmin(admin.ModelAdmin):
 class ExpenseAdmin(admin.ModelAdmin):
     """Admin interface for expenses"""
     list_display = [
-        'name', 'amount', 'currency', 'category', 'status', 'date_incurred', 
+        'name', 'amount', 'currency', 'category', 'status', 'date_incurred',
         'vendor_name', 'attachment_count', 'created_at'
     ]
     list_filter = [
-        'status', 'currency', 'category', 'is_recurring', 'date_incurred', 
+        'status', 'currency', 'category', 'is_recurring', 'date_incurred',
         'created_at'
     ]
     search_fields = [
@@ -56,7 +56,7 @@ class ExpenseAdmin(admin.ModelAdmin):
     ]
     date_hierarchy = 'date_incurred'
     ordering = ['-date_incurred', '-created_at']
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'amount', 'currency', 'reference_number', 'description')
@@ -81,9 +81,9 @@ class ExpenseAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
     inlines = [ExpenseAttachmentInline]
-    
+
     def attachment_count(self, obj):
         """Count of attachments for this expense"""
         count = obj.attachments.count()
@@ -97,18 +97,18 @@ class ExpenseAdmin(admin.ModelAdmin):
             )
         return '0'
     attachment_count.short_description = 'Attachments'
-    
+
     def is_overdue(self, obj):
         """Check if expense is overdue"""
         return obj.is_overdue()
     is_overdue.boolean = True
     is_overdue.short_description = 'Overdue'
-    
+
     def days_overdue(self, obj):
         """Get days overdue"""
         return obj.get_days_overdue()
     days_overdue.short_description = 'Days Overdue'
-    
+
     def save_model(self, request, obj, form, change):
         """Custom save logic for approval tracking"""
         if 'status' in form.changed_data and obj.status == 'approved':
@@ -121,14 +121,14 @@ class ExpenseAdmin(admin.ModelAdmin):
 class ExpenseAttachmentAdmin(admin.ModelAdmin):
     """Admin interface for expense attachments"""
     list_display = [
-        'expense', 'file_type', 'original_filename', 'file_preview', 
+        'expense', 'file_type', 'original_filename', 'file_preview',
         'uploaded_at', 'expense_status'
     ]
     list_filter = ['file_type', 'uploaded_at', 'expense__status']
     search_fields = ['expense__name', 'original_filename', 'description']
     readonly_fields = ['uploaded_at', 'file_extension', 'is_image', 'is_pdf']
     ordering = ['-uploaded_at']
-    
+
     fieldsets = (
         ('File Information', {
             'fields': ('expense', 'file', 'file_type', 'description')
@@ -142,7 +142,7 @@ class ExpenseAttachmentAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
     def file_preview(self, obj):
         """Show file preview or icon"""
         if obj.is_image():
@@ -160,7 +160,7 @@ class ExpenseAttachmentAdmin(admin.ModelAdmin):
                 obj.get_file_extension().upper()
             )
     file_preview.short_description = 'Preview'
-    
+
     def expense_status(self, obj):
         """Show expense status with color coding"""
         status_colors = {
@@ -175,18 +175,18 @@ class ExpenseAttachmentAdmin(admin.ModelAdmin):
             color, obj.expense.get_status_display()
         )
     expense_status.short_description = 'Expense Status'
-    
+
     def file_extension(self, obj):
         """Get file extension"""
         return obj.get_file_extension()
     file_extension.short_description = 'File Extension'
-    
+
     def is_image(self, obj):
         """Check if file is image"""
         return obj.is_image()
     is_image.boolean = True
     is_image.short_description = 'Is Image'
-    
+
     def is_pdf(self, obj):
         """Check if file is PDF"""
         return obj.is_pdf()

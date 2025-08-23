@@ -30,16 +30,16 @@
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="name" class="form-label">
                                     Expense Name <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="name" 
-                                       name="name" 
+                                <input type="text"
+                                       class="form-control"
+                                       id="name"
+                                       name="name"
                                        value="{% if expense %}{{ expense.name }}{% endif %}"
                                        placeholder="Enter expense name"
                                        required>
@@ -49,10 +49,10 @@
                                 <label for="amount" class="form-label">
                                     Amount <span class="text-danger">*</span>
                                 </label>
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="amount" 
-                                       name="amount" 
+                                <input type="number"
+                                       class="form-control"
+                                       id="amount"
+                                       name="amount"
                                        value="{% if expense %}{{ expense.amount }}{% endif %}"
                                        placeholder="0.00"
                                        step="0.01"
@@ -78,24 +78,29 @@
 
                             <div class="col-md-6 mb-3">
                                 <label for="category" class="form-label">Category</label>
-                                <select class="form-select" id="category" name="category">
-                                    <option value="">Select Category</option>
-                                    {% for category in categories %}
-                                    <option value="{{ category.id }}" {% if expense and expense.category_id == category.id %}selected{% endif %}>
-                                        {{ category.name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="">Select Category</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}" {% if expense and expense.category_id == category.id %}selected{% endif %}>
+                                            {{ category.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#quickCategoryModal">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="reference_number" class="form-label">Reference Number</label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="reference_number" 
-                                       name="reference_number" 
+                                <input type="text"
+                                       class="form-control"
+                                       id="reference_number"
+                                       name="reference_number"
                                        value="{% if expense %}{{ expense.reference_number }}{% endif %}"
                                        placeholder="Invoice number, receipt number, etc.">
                             </div>
@@ -104,10 +109,10 @@
                                 <label for="date_incurred" class="form-label">
                                     Date Incurred <span class="text-danger">*</span>
                                 </label>
-                                <input type="date" 
-                                       class="form-control" 
-                                       id="date_incurred" 
-                                       name="date_incurred" 
+                                <input type="date"
+                                       class="form-control"
+                                       id="date_incurred"
+                                       name="date_incurred"
                                        value="{% if expense %}{{ expense.date_incurred|date:'Y-m-d' }}{% endif %}"
                                        required>
                             </div>
@@ -115,29 +120,29 @@
 
                         <div class="mb-3">
                             <label for="vendor_name" class="form-label">Vendor/Supplier</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="vendor_name" 
-                                   name="vendor_name" 
+                            <input type="text"
+                                   class="form-control"
+                                   id="vendor_name"
+                                   name="vendor_name"
                                    value="{% if expense %}{{ expense.vendor_name }}{% endif %}"
                                    placeholder="Name of vendor or supplier">
                         </div>
 
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" 
-                                      id="description" 
-                                      name="description" 
+                            <textarea class="form-control"
+                                      id="description"
+                                      name="description"
                                       rows="3"
                                       placeholder="Detailed description of the expense">{% if expense %}{{ expense.description }}{% endif %}</textarea>
                         </div>
 
                         <div class="mb-3">
                             <label for="attachments" class="form-label">Attachments</label>
-                            <input type="file" 
-                                   class="form-control" 
-                                   id="attachments" 
-                                   name="attachments" 
+                            <input type="file"
+                                   class="form-control"
+                                   id="attachments"
+                                   name="attachments"
                                    multiple
                                    accept="image/*,.pdf,.doc,.docx">
                             <div class="form-text">Upload receipts, invoices, or other supporting documents</div>
@@ -145,10 +150,10 @@
 
                         <div class="mb-3">
                             <label for="created_by" class="form-label">Created By</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="created_by" 
-                                   name="created_by" 
+                            <input type="text"
+                                   class="form-control"
+                                   id="created_by"
+                                   name="created_by"
                                    value="{% if expense %}{{ expense.created_by }}{% endif %}"
                                    placeholder="Your name">
                         </div>
@@ -178,4 +183,79 @@
         </div>
     </div>
 </div>
+
+<!-- Quick Category Creation Modal -->
+<div class="modal fade" id="quickCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Add Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickCategoryForm">
+                    <div class="mb-3">
+                        <label for="quick_category_name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="quick_category_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quick_category_color" class="form-label">Color</label>
+                        <input type="color" class="form-control form-control-color" id="quick_category_color" value="#007bff">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createQuickCategory()">Create Category</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function createQuickCategory() {
+    const name = document.getElementById('quick_category_name').value;
+    const color = document.getElementById('quick_category_color').value;
+
+    if (!name) {
+        alert('Category name is required');
+        return;
+    }
+
+    // Create category via AJAX
+    fetch('{% url "expenses:category_create" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add new category to dropdown
+            const categorySelect = document.getElementById('category');
+            const option = new Option(name, data.category_id);
+            categorySelect.add(option);
+            categorySelect.value = data.category_id;
+
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('quickCategoryModal')).hide();
+
+            // Clear form
+            document.getElementById('quick_category_name').value = '';
+
+            // Show success message
+            alert('Category created successfully!');
+        } else {
+            alert('Error creating category: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating category. Please try again.');
+    });
+}
+</script>
 {% endblock %}

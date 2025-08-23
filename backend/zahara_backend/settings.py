@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'invoices.apps.InvoicesConfig',
     'expenses.apps.ExpensesConfig',
     'payments',
+    'planting_schedule',
 ]
 
 MIDDLEWARE = [

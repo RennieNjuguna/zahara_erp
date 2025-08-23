@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Planting Schedule Dashboard{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h1>Planting Schedule Dashboard</h1>
+      <p>Manage your crops, farm blocks, and planting activities.</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="view-buttons">
+        <a href="{% url 'planting_schedule:crop_create' %}" class="view-btn">
+          <i class="bi bi-plus-circle me-2"></i>Add Crop
+        </a>
+        <a href="{% url 'planting_schedule:block_create' %}" class="view-btn">
+          <i class="bi bi-plus-circle me-2"></i>Add Block
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">{{ total_crops }}</div>
+      <div class="metric-label">Total Crops</div>
+      <div class="metric-change up">
+        <i class="bi bi-seedling me-2"></i>Active
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">{{ total_blocks }}</div>
+      <div class="metric-label">Total Blocks</div>
+      <div class="metric-change up">
+        <i class="bi bi-grid-3x3 me-2"></i>Available
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">0</div>
+      <div class="metric-label">Active Plantings</div>
+      <div class="metric-change up">
+        <i class="bi bi-calendar-check me-2"></i>Growing
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">0</div>
+      <div class="metric-label">Harvest Ready</div>
+      <div class="metric-change up">
+        <i class="bi bi-basket me-2"></i>Ready
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Cards Row -->
+<div class="row">
+  <!-- Recent Crops -->
+  <div class="col-md-6 mb-4">
+    <div class="data-card">
+      <h5 class="card-title">Recent Crops</h5>
+      <p class="card-subtitle">Latest crops added to your system</p>
+
+      {% if recent_crops %}
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Days to Maturity</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for crop in recent_crops %}
+              <tr>
+                <td><strong>{{ crop.name }}</strong></td>
+                <td>{{ crop.days_to_maturity }} days</td>
+                <td>{{ crop.created_at|date:"M d, Y" }}</td>
+                <td>
+                  <a href="{% url 'planting_schedule:crop_detail' crop.pk %}" class="btn btn-sm" style="background-color: var(--accent-magenta); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{% url 'planting_schedule:crop_edit' crop.pk %}" class="btn btn-sm" style="background-color: var(--warning-orange); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-4">
+          <i class="bi bi-seedling" style="font-size: 3rem; color: var(--text-secondary);"></i>
+          <p class="text-muted mt-2">No crops have been created yet.</p>
+          <a href="{% url 'planting_schedule:crop_create' %}" class="btn" style="background-color: var(--accent-magenta); color: white; border: none;">
+            <i class="bi bi-plus-circle"></i> Create Your First Crop
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Farm Blocks -->
+  <div class="col-md-6 mb-4">
+    <div class="data-card">
+      <h5 class="card-title">Recent Farm Blocks</h5>
+      <p class="card-subtitle">Latest farm blocks in your system</p>
+
+      {% if recent_blocks %}
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Area (acres)</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for block in recent_blocks %}
+              <tr>
+                <td><strong>{{ block.name }}</strong></td>
+                <td>{{ block.area_acres }}</td>
+                <td>
+                  <span class="status-badge" style="background-color: {% if block.status == 'active' %}var(--success-green){% elif block.status == 'fallow' %}var(--warning-orange){% elif block.status == 'cleared' %}#3498db{% else %}#95a5a6{% endif %}; color: white;">
+                    {{ block.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <a href="{% url 'planting_schedule:block_detail' block.pk %}" class="btn btn-sm" style="background-color: var(--accent-magenta); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{% url 'planting_schedule:block_edit' block.pk %}" class="btn btn-sm" style="background-color: var(--warning-orange); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-4">
+          <i class="bi bi-grid-3x3" style="font-size: 3rem; color: var(--text-secondary);"></i>
+          <p class="text-muted mt-2">No farm blocks have been created yet.</p>
+          <a href="{% url 'planting_schedule:block_create' %}" class="btn" style="background-color: var(--accent-magenta); color: white; border: none;">
+            <i class="bi bi-plus-circle"></i> Create Your First Block
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+  <div class="col-12">
+    <div class="data-card">
+      <h5 class="card-title">Quick Actions</h5>
+      <p class="card-subtitle">Common tasks and shortcuts</p>
+
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">Crop Management</h6>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'planting_schedule:crop_create' %}" class="btn" style="background-color: var(--success-green); color: white; border: none;">
+              <i class="bi bi-plus-circle me-2"></i> Add New Crop
+            </a>
+            <a href="{% url 'planting_schedule:crop_list' %}" class="btn" style="background-color: var(--accent-magenta); color: white; border: none;">
+              <i class="bi bi-list me-2"></i> View All Crops
+            </a>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <h6 class="text-muted mb-3">Farm Block Management</h6>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'planting_schedule:block_create' %}" class="btn" style="background-color: var(--success-green); color: white; border: none;">
+              <i class="bi bi-plus-circle me-2"></i> Add New Block
+            </a>
+            <a href="{% url 'planting_schedule:block_list' %}" class="btn" style="background-color: var(--accent-magenta); color: white; border: none;">
+              <i class="bi bi-list me-2"></i> View All Blocks
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

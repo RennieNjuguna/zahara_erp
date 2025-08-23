@@ -29,35 +29,35 @@
                     <div class="row">
                         <div class="col-md-6">
                             <p><strong>Amount:</strong> {{ expense.amount }} {{ expense.currency }}</p>
-                            <p><strong>Status:</strong> 
+                            <p><strong>Status:</strong>
                                 <span class="badge bg-{{ expense.status }}">{{ expense.get_status_display }}</span>
                             </p>
                             <p><strong>Date Incurred:</strong> {{ expense.date_incurred|date:"M d, Y" }}</p>
                             <p><strong>Created:</strong> {{ expense.created_at|date:"M d, Y" }}</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Category:</strong> 
+                            <p><strong>Category:</strong>
                                 {% if expense.category %}
                                 <span class="badge bg-primary">{{ expense.category.name }}</span>
                                 {% else %}
                                 <span class="text-muted">No category</span>
                                 {% endif %}
                             </p>
-                            <p><strong>Reference:</strong> 
+                            <p><strong>Reference:</strong>
                                 {% if expense.reference_number %}
                                 {{ expense.reference_number }}
                                 {% else %}
                                 <span class="text-muted">No reference</span>
                                 {% endif %}
                             </p>
-                            <p><strong>Vendor:</strong> 
+                            <p><strong>Vendor:</strong>
                                 {% if expense.vendor_name %}
                                 {{ expense.vendor_name }}
                                 {% else %}
                                 <span class="text-muted">No vendor</span>
                                 {% endif %}
                             </p>
-                            <p><strong>Created By:</strong> 
+                            <p><strong>Created By:</strong>
                                 {% if expense.created_by %}
                                 {{ expense.created_by }}
                                 {% else %}
@@ -66,7 +66,7 @@
                             </p>
                         </div>
                     </div>
-                    
+
                     {% if expense.description %}
                     <hr>
                     <p><strong>Description:</strong></p>

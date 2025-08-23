@@ -13,17 +13,37 @@ def order_list(request):
     customers = Customer.objects.all().order_by('name')
     customer_id = request.GET.get('customer')
     status = request.GET.get('status')
+    date_filter = request.GET.get('date')
 
     orders = Order.objects.all().order_by('-date')
     if customer_id:
         orders = orders.filter(customer_id=customer_id)
     if status:
         orders = orders.filter(status=status)
+    if date_filter:
+        orders = orders.filter(date=date_filter)
+
+    # Calculate summary statistics
+    total_orders = orders.count()
+    pending_orders = orders.filter(status='pending')
+    paid_orders = orders.filter(status='paid')
+    claim_orders = orders.filter(status='claim')
+
+    total_value = sum(order.total_amount for order in orders)
+    pending_value = sum(order.total_amount for order in pending_orders)
+    paid_value = sum(order.total_amount for order in paid_orders)
 
     return render(request, 'orders/order_list.html', {
         'orders': orders,
         'customers': customers,
         'filters': request.GET,
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
+        'paid_orders': paid_orders,
+        'claim_orders': claim_orders,
+        'total_value': total_value,
+        'pending_value': pending_value,
+        'paid_value': paid_value,
     })
 
 
@@ -92,6 +112,7 @@ def order_create(request):
     return render(request, 'orders/order_form.html', {
         'customers': customers,
         'products': products,
+        'default_currency': 'KES',  # Default currency
     })
 
 
@@ -147,6 +168,7 @@ def order_edit(request, order_id):
         'order': order,
         'customers': customers,
         'products': products,
+        'default_currency': order.currency or 'KES',  # Use order currency or default
     })
 
 
