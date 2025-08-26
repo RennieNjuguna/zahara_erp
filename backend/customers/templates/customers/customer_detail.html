@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ customer.name }} - Customer Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'customers:customer_list' %}">Customers</a></li>
+                    <li class="breadcrumb-item active">{{ customer.name }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0 mt-2">{{ customer.name }}</h1>
+            <p class="text-muted mb-0">
+                Short Code: <span class="badge bg-secondary">{{ customer.short_code }}</span>
+                | Currency: <span class="badge bg-info">{{ customer.preferred_currency }}</span>
+            </p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{% url 'customers:customer_edit' customer.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+            <button type="button" class="btn btn-outline-danger" 
+                    data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Customer Information -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-circle"></i> Customer Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Customer Name</label>
+                        <p class="mb-0 fw-medium">{{ customer.name }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Short Code</label>
+                        <p class="mb-0"><span class="badge bg-secondary">{{ customer.short_code }}</span></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Preferred Currency</label>
+                        <p class="mb-0"><span class="badge bg-info">{{ customer.preferred_currency }}</span></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Total Branches</label>
+                        <p class="mb-0 fw-medium">{{ branches.count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-cash-stack"></i> Financial Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Current Balance</label>
+                        <p class="mb-0">
+                            <span class="{% if current_balance < 0 %}text-danger{% elif current_balance > 0 %}text-success{% else %}text-muted{% endif %} fw-bold fs-5">
+                                {{ customer.preferred_currency }} {{ current_balance|floatformat:2 }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Outstanding Amount</label>
+                        <p class="mb-0">
+                            <span class="{% if outstanding_amount > 0 %}text-warning{% else %}text-success{% endif %} fw-bold fs-5">
+                                {{ customer.preferred_currency }} {{ outstanding_amount|floatformat:2 }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Total Sales</label>
+                        <p class="mb-0 fw-medium">
+                            {{ customer.preferred_currency }} {{ stats.total_sales|floatformat:2 }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Statistics -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i> Order Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-1">{{ stats.total_orders }}</h4>
+                                <small class="text-muted">Total Orders</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h4 class="text-success mb-1">{{ stats.paid_orders }}</h4>
+                            <small class="text-muted">Paid Orders</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning mb-1">{{ stats.pending_orders }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-info mb-1">{{ stats.claimed_orders }}</h4>
+                            <small class="text-muted">Claimed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branches Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-building"></i> Branches
+                    </h5>
+                    <a href="{% url 'customers:branch_create' customer.id %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add Branch
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if branches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Branch Name</th>
+                                    <th>Short Code</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for branch in branches %}
+                                <tr>
+                                    <td>{{ branch.name }}</td>
+                                    <td><span class="badge bg-secondary">{{ branch.short_code }}</span></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'customers:branch_edit' branch.id %}" 
+                                               class="btn btn-outline-secondary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteBranchModal{{ branch.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-building display-4 text-muted"></i>
+                        <h5 class="mt-3">No branches yet</h5>
+                        <p class="text-muted">Add branches to organize customer locations</p>
+                        <a href="{% url 'customers:branch_create' customer.id %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add First Branch
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-ul"></i> Recent Orders
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Total Amount</th>
+                                    <th>Outstanding</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'orders:order_detail' order.id %}" class="text-decoration-none">
+                                            #{{ order.id }}
+                                        </a>
+                                    </td>
+                                    <td>{{ order.date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if order.status == 'paid' %}success{% elif order.status == 'pending' %}warning{% elif order.status == 'claim' %}info{% else %}secondary{% endif %}">
+                                            {{ order.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.currency }} {{ order.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="{% if order.outstanding_amount > 0 %}text-warning{% else %}text-success{% endif %}">
+                                            {{ order.currency }} {{ order.outstanding_amount|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'orders:order_list' %}?customer={{ customer.id }}" class="btn btn-outline-primary">
+                            View All Orders
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-list-ul display-4 text-muted"></i>
+                        <h5 class="mt-3">No orders yet</h5>
+                        <p class="text-muted">This customer hasn't placed any orders yet</p>
+                        <a href="{% url 'orders:order_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create First Order
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Customer Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ customer.name }}</strong>?</p>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This action cannot be undone. All associated data will be permanently deleted.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'customers:customer_delete' customer.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Customer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Branch Modals -->
+{% for branch in branches %}
+<div class="modal fade" id="deleteBranchModal{{ branch.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Branch</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete branch <strong>{{ branch.name }}</strong>?</p>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'customers:branch_delete' branch.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Branch</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

@@ -10,7 +10,7 @@
         <label class="form-label">Customer</label>
         <select class="form-select" name="customer" id="customer-select" required>
           <option value="">Select customer</option>
-          {% for c in customers %}<option value="{{ c.id }}" {% if order.customer.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+          {% for c in customers %}<option value="{{ c.id }}" {% if order.customer.id == c.id %}selected{% endif %} data-currency="{{ c.preferred_currency }}">{{ c.name }}</option>{% endfor %}
         </select>
       </div>
       <div class="col-md-4">
@@ -25,7 +25,7 @@
       </div>
       <div class="col-md-6">
         <label class="form-label">Remarks</label>
-        <input class="form-control" type="text" name="remarks" value="{{ order.remarks|default:'' }}">
+        <input class="form-control" type="text" name="remarks" value="{{ order.remarks|default:'' }}" placeholder="Enter any special instructions or notes">
       </div>
       <div class="col-md-3">
         <label class="form-label">Logistics Provider</label>
@@ -33,7 +33,10 @@
       </div>
       <div class="col-md-3">
         <label class="form-label">Logistics Cost</label>
-        <input class="form-control" type="number" step="0.01" name="logistics_cost" value="{{ order.logistics_cost|default:'' }}">
+        <div class="input-group">
+          <input class="form-control" type="number" step="0.01" name="logistics_cost" value="{{ order.logistics_cost|default:'' }}" placeholder="0.00">
+          <span class="input-group-text" id="logistics-currency">{{ default_currency }}</span>
+        </div>
       </div>
     </div>
     <hr class="my-4">
@@ -54,7 +57,200 @@
   </div>
 </form>
 
+<!-- Price Lookup Modal -->
+<div class="modal fade" id="priceLookupModal" tabindex="-1" aria-labelledby="priceLookupModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="priceLookupModalLabel">
+          <i class="bi bi-currency-exchange me-2"></i>Customer Pricing Lookup
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <strong>Product:</strong> <span id="lookupProductName">-</span>
+          </div>
+          <div class="col-md-6">
+            <strong>Stem Length:</strong> <span id="lookupStemLength">-</span> cm
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Length (cm)</th>
+                <th>Price</th>
+                <th>Currency</th>
+              </tr>
+            </thead>
+            <tbody id="priceLookupTableBody">
+              <!-- Data will be populated here -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="noPricingData" class="text-center py-4" style="display: none;">
+          <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+          <p class="text-muted mt-2">No pricing data found for this product and stem length.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+// Price lookup functionality - Define this first so it's available when buttons are created
+function showPriceLookup(button) {
+  // Store the button reference globally so selectPrice can find it
+  window.lastClickedLookupButton = button;
+
+  const row = button.closest('tr');
+  const productSelect = row.querySelector('.item-product');
+  const stemInput = row.querySelector('.item-stem');
+
+  const productId = productSelect.value;
+  const stemLength = stemInput.value;
+
+  if (!productId || !stemLength) {
+    // Show a more user-friendly message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      <strong>Please complete the form first:</strong><br>
+      Select a product and enter stem length to view pricing.
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        alertDiv.remove();
+      }
+    }, 5000);
+    return;
+  }
+
+  // Get product name for display
+  const productName = productSelect.options[productSelect.selectedIndex].text;
+
+  // Update modal header
+  document.getElementById('lookupProductName').textContent = productName;
+  document.getElementById('lookupStemLength').textContent = stemLength;
+
+  // Show loading state
+  const tableBody = document.getElementById('priceLookupTableBody');
+  const noDataDiv = document.getElementById('noPricingData');
+  tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="bi bi-arrow-clockwise spin"></i> Loading...</td></tr>';
+  noDataDiv.style.display = 'none';
+
+  // Fetch pricing data
+  fetch(`/orders/get-customer-pricing/?product_id=${productId}&stem_length=${stemLength}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.pricing.length > 0) {
+        // Display pricing data
+        tableBody.innerHTML = data.pricing.map(item => `
+          <tr class="pricing-row" style="cursor: pointer;" onclick="selectPrice('${item.price_per_stem}', '${item.currency}', this)">
+            <td><strong>${item.customer_name}</strong></td>
+            <td>${item.product_name}</td>
+            <td>${item.stem_length_cm}</td>
+            <td><strong>${item.price_per_stem}</strong></td>
+            <td><span class="badge bg-primary">${item.currency}</span></td>
+          </tr>
+        `).join('');
+
+        // Add hover effect instructions
+        tableBody.insertAdjacentHTML('afterbegin', `
+          <tr class="table-info">
+            <td colspan="5" class="text-center text-muted">
+              <i class="bi bi-info-circle me-2"></i>
+              Click on any row to copy the price to your form
+            </td>
+          </tr>
+        `);
+        noDataDiv.style.display = 'none';
+      } else {
+        // Show no data message
+        tableBody.innerHTML = '';
+        noDataDiv.style.display = 'block';
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching pricing data:', error);
+      tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading pricing data</td></tr>';
+      noDataDiv.style.display = 'none';
+    });
+
+  // Show the modal
+  const modal = new bootstrap.Modal(document.getElementById('priceLookupModal'));
+  modal.show();
+}
+
+// Function to select a price from the lookup
+function selectPrice(price, currency, rowElement) {
+  // Find the current row in the form by looking for the button that opened the modal
+  // We'll use a different approach - store the button reference when opening the modal
+  const modal = document.getElementById('priceLookupModal');
+  const modalInstance = bootstrap.Modal.getInstance(modal);
+
+  // Get the button that opened this modal (stored in global variable)
+  const currentButton = window.lastClickedLookupButton;
+  if (!currentButton) {
+    console.error('Could not find the button that opened the modal');
+    return;
+  }
+
+  const currentRow = currentButton.closest('tr');
+  const priceInput = currentRow.querySelector('.item-price');
+  const currencySpan = currentRow.querySelector('.item-currency');
+
+  // Update the form
+  priceInput.value = price;
+  currencySpan.textContent = currency;
+
+  // Highlight the selected row briefly
+  rowElement.style.backgroundColor = '#d4edda';
+  rowElement.style.border = '2px solid #28a745';
+
+  setTimeout(() => {
+    rowElement.style.backgroundColor = '';
+    rowElement.style.border = '';
+  }, 1000);
+
+  // Close the modal
+  modalInstance.hide();
+
+  // Show success message
+  const alertDiv = document.createElement('div');
+  alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+  alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+  alertDiv.innerHTML = `
+    <i class="bi bi-check-circle me-2"></i>
+    <strong>Price updated!</strong><br>
+    Price: ${price} ${currency}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+  document.body.appendChild(alertDiv);
+
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    if (alertDiv.parentNode) {
+      alertDiv.remove();
+    }
+  }, 3000);
+}
+
 function addRow() {
   const tbody = document.querySelector('#items-table tbody');
   const row = document.createElement('tr');
@@ -68,7 +264,15 @@ function addRow() {
     <td><input class="form-control form-control-sm item-stem" type="number" name="item_stem_length_cm" placeholder="cm"></td>
     <td><input class="form-control form-control-sm" type="number" name="item_boxes" value="1" min="1"></td>
     <td><input class="form-control form-control-sm" type="number" name="item_stems_per_box" value="1" min="1"></td>
-    <td><input class="form-control form-control-sm item-price" type="number" step="0.01" name="item_price_per_stem" placeholder="0.00"></td>
+    <td>
+      <div class="input-group input-group-sm">
+        <input class="form-control form-control-sm item-price" type="number" step="0.01" name="item_price_per_stem" placeholder="0.00">
+        <span class="input-group-text item-currency">{{ default_currency }}</span>
+        <button type="button" class="btn btn-outline-info btn-sm price-lookup-btn" title="View customer pricing" onclick="showPriceLookup(this)">
+          <i class="bi bi-question-circle"></i>
+        </button>
+      </div>
+    </td>
     <td class="text-end"><button class="btn btn-sm btn-outline-danger" type="button" onclick="this.closest('tr').remove()">Remove</button></td>
   `;
   tbody.appendChild(row);
@@ -91,15 +295,43 @@ function addRow() {
   return row;
 }
 
+// Function to update currency display based on customer selection
+function updateCurrencyDisplay() {
+  const customerSelect = document.getElementById('customer-select');
+  const customerId = customerSelect.value;
+
+  if (customerId) {
+    // Get customer currency from the selected option's data attribute
+    const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+    const customerCurrency = selectedOption.getAttribute('data-currency') || '{{ default_currency }}';
+
+    // Update logistics cost currency
+    document.getElementById('logistics-currency').textContent = customerCurrency;
+
+    // Update all item price currencies
+    document.querySelectorAll('.item-currency').forEach(currencySpan => {
+      currencySpan.textContent = customerCurrency;
+    });
+  } else {
+    // Use default currency when no customer is selected
+    const defaultCurrency = '{{ default_currency }}';
+    document.getElementById('logistics-currency').textContent = defaultCurrency;
+    document.querySelectorAll('.item-currency').forEach(currencySpan => {
+      currencySpan.textContent = defaultCurrency;
+    });
+  }
+}
+
 // Initialize the form
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, checking for existing order items...');
     console.log('Order exists:', {% if order %}true{% else %}false{% endif %});
     {% if order %}
     console.log('Order ID:', {{ order.id }});
+    console.log('Order currency:', '{{ order.currency }}');
     console.log('Items count:', {{ order.items.count }});
     {% endif %}
-    
+
     {% if order and order.items.count > 0 %}
         console.log('Loading existing order items...');
         // Editing existing order with items - load existing items
@@ -114,15 +346,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const boxesInput = row_{{ forloop.counter }}.querySelector('input[name="item_boxes"]');
             const stemsPerBoxInput = row_{{ forloop.counter }}.querySelector('input[name="item_stems_per_box"]');
             const priceInput = row_{{ forloop.counter }}.querySelector('.item-price');
-            
+
             console.log('Found elements:', { productSelect, stemInput, boxesInput, stemsPerBoxInput, priceInput });
-            
+
             if (productSelect) productSelect.value = '{{ item.product.id }}';
             if (stemInput) stemInput.value = '{{ item.stem_length_cm }}';
             if (boxesInput) boxesInput.value = '{{ item.boxes }}';
             if (stemsPerBoxInput) stemsPerBoxInput.value = '{{ item.stems_per_box }}';
             if (priceInput) priceInput.value = '{{ item.price_per_stem }}';
-            
+
             console.log('Values set for {{ item.product.name }}');
         }
         {% endfor %}
@@ -132,14 +364,86 @@ document.addEventListener('DOMContentLoaded', function() {
         // Creating new order or editing order without items - start with one empty row
         addRow();
     {% endif %}
+
+    // Set initial currency display
+    updateCurrencyDisplay();
 });
 
 document.getElementById('customer-select').addEventListener('change', function(){
   const id = this.value; if(!id) return;
+
+  // Update currency display when customer changes
+  updateCurrencyDisplay();
+
   fetch(`/orders/get-branches/?customer_id=${id}`).then(r=>r.json()).then(list=>{
     const sel = document.getElementById('branch-select'); sel.innerHTML = '<option value="">--</option>';
     list.forEach(b=>{ const o = document.createElement('option'); o.value=b.id; o.textContent=b.name; sel.appendChild(o); });
   });
+});
+
+// Add spinning animation for loading
+document.addEventListener('DOMContentLoaded', function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .price-lookup-btn {
+      border-left: 0;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      transition: all 0.2s ease;
+    }
+    .price-lookup-btn:hover {
+      background-color: var(--accent-magenta);
+      color: white;
+      border-color: var(--accent-magenta);
+      transform: scale(1.05);
+    }
+    .price-lookup-btn:focus {
+      box-shadow: 0 0 0 0.2rem rgba(154, 29, 86, 0.25);
+    }
+    .modal-header {
+      background-color: var(--accent-magenta);
+      color: white;
+    }
+    .modal-header .btn-close {
+      filter: invert(1);
+    }
+    .modal-content {
+      border: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      border-radius: 12px;
+    }
+    .modal-header {
+      border-radius: 12px 12px 0 0;
+    }
+    .table th {
+      background-color: #f8f9fa;
+      border-top: none;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .badge {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+    }
+    .pricing-row:hover {
+      background-color: #e3f2fd !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
+    }
+    .pricing-row:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+  `;
+  document.head.appendChild(style);
 });
 </script>
 {% endblock %}

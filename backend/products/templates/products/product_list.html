@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}Products - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Products</h1>
+            <p class="text-muted">Manage your product catalog and pricing</p>
+        </div>
+        <a href="{% url 'products:product_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Product
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search Products</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search by product name...">
+                </div>
+                <div class="col-md-2">
+                    <label for="min_stem_length" class="form-label">Min Stem Length (cm)</label>
+                    <input type="number" class="form-control" id="min_stem_length" name="min_stem_length" 
+                           value="{{ min_stem_length }}" placeholder="Min" min="1">
+                </div>
+                <div class="col-md-2">
+                    <label for="max_stem_length" class="form-label">Max Stem Length (cm)</label>
+                    <input type="number" class="form-control" id="max_stem_length" name="max_stem_length" 
+                           value="{{ max_stem_length }}" placeholder="Max" min="1">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <p class="text-muted mb-0">
+                Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ total_products }} products
+            </p>
+        </div>
+        <div class="col-md-6 text-end">
+            {% if search_query or min_stem_length or max_stem_length %}
+            <span class="badge bg-info">Filtered Results</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>Stem Length</th>
+                            <th>Total Customers</th>
+                            <th>Average Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in page_obj %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-flower1"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ product.name }}</h6>
+                                        <small class="text-muted">
+                                            {% if product.total_customers > 0 %}
+                                            {{ product.total_customers }} customer{{ product.total_customers|pluralize:"s" }} with pricing
+                                            {% else %}
+                                            No customer pricing set
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ product.stem_length_cm }} cm</span>
+                            </td>
+                            <td>
+                                <span class="fw-medium">{{ product.total_customers|default:0 }}</span>
+                            </td>
+                            <td>
+                                {% if product.avg_price %}
+                                <span class="text-success fw-medium">
+                                    ${{ product.avg_price|floatformat:2 }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">No pricing</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'products:product_detail' product.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="View Product">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'products:product_edit' product.id %}" 
+                                       class="btn btn-sm btn-outline-secondary" title="Edit Product">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'products:price_create' product.id %}" 
+                                       class="btn btn-sm btn-outline-success" title="Add Price">
+                                        <i class="bi bi-currency-dollar"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal{{ product.id }}" title="Delete Product">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-flower1 display-1 text-muted"></i>
+                <h4 class="mt-3">No products found</h4>
+                <p class="text-muted">
+                    {% if search_query or min_stem_length or max_stem_length %}
+                    Try adjusting your search criteria or 
+                    <a href="{% url 'products:product_list' %}">clear all filters</a>.
+                    {% else %}
+                    Get started by adding your first product.
+                    {% endif %}
+                </p>
+                {% if not search_query and not min_stem_length and not max_stem_length %}
+                <a href="{% url 'products:product_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add Product
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Product pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if min_stem_length %}&min_stem_length={{ min_stem_length }}{% endif %}{% if max_stem_length %}&max_stem_length={{ max_stem_length }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if min_stem_length %}&min_stem_length={{ min_stem_length }}{% endif %}{% if max_stem_length %}&max_stem_length={{ max_stem_length }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if min_stem_length %}&min_stem_length={{ min_stem_length }}{% endif %}{% if max_stem_length %}&max_stem_length={{ max_stem_length }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if min_stem_length %}&min_stem_length={{ min_stem_length }}{% endif %}{% if max_stem_length %}&max_stem_length={{ max_stem_length }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if min_stem_length %}&min_stem_length={{ min_stem_length }}{% endif %}{% if max_stem_length %}&max_stem_length={{ max_stem_length }}{% endif %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Delete Modals -->
+{% for product in page_obj %}
+<div class="modal fade" id="deleteModal{{ product.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ product.name }}</strong>?</p>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This action cannot be undone. All associated pricing data will be permanently deleted.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'products:product_delete' product.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

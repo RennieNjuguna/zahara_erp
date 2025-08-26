@@ -1,53 +1,310 @@
 {% extends "base.html" %}
-{% block title %}Orders{% endblock %}
+
+{% block title %}Orders - Zahara ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+  .table tbody tr:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+  }
+
+  .status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: none;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h3 class="mb-0">Orders</h3>
-  <a class="btn btn-primary btn-sm" href="{% url 'orders:order_create' %}">Create Order</a>
-  <form method="get" class="d-flex align-items-end" role="search">
-    <div class="me-2">
-      <label class="form-label">Customer</label>
-      <select class="form-select form-select-sm" name="customer">
-        <option value="">All</option>
-        {% for c in customers %}
-        <option value="{{ c.id }}" {% if filters.customer == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
-        {% endfor %}
-      </select>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h1>Orders Management</h1>
+      <p>Manage customer orders, track status, and monitor payments.</p>
     </div>
-    <div class="me-2">
-      <label class="form-label">Status</label>
-      <select class="form-select form-select-sm" name="status">
-        <option value="">All</option>
-        <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
-        <option value="paid" {% if filters.status == 'paid' %}selected{% endif %}>Paid</option>
-        <option value="claim" {% if filters.status == 'claim' %}selected{% endif %}>Claim</option>
-        <option value="cancelled" {% if filters.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-      </select>
+    <div class="col-md-4 text-end">
+      <div class="view-buttons">
+        <a href="{% url 'orders:order_create' %}" class="view-btn">
+          <i class="bi bi-plus-circle me-2"></i>Create Order
+        </a>
+        <a href="#" class="view-btn">
+          <i class="bi bi-download me-2"></i>Export
+        </a>
+      </div>
     </div>
-    <button class="btn btn-outline-secondary btn-sm">Filter</button>
-  </form>
+  </div>
 </div>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Status</th><th>Total</th><th></th></tr></thead>
-        <tbody>
-          {% for o in orders %}
-          <tr>
-            <td>{{ o.invoice_code }}</td>
-            <td>{{ o.customer.name }}</td>
-            <td>{{ o.date|date:'Y-m-d' }}</td>
-            <td>{{ o.get_status_display }}</td>
-            <td>{{ o.total_amount }}</td>
-            <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'orders:order_detail' o.id %}">Open</a></td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="6" class="text-muted">No orders</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<!-- Quick Stats -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">{{ total_orders }}</div>
+      <div class="metric-label">Total Orders</div>
+      <div class="metric-change up">
+        <i class="bi bi-file-earmark-text me-2"></i>Active
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">{{ pending_orders|length }}</div>
+      <div class="metric-label">Pending Orders</div>
+      <div class="metric-change up">
+        <i class="bi bi-clock me-2"></i>Awaiting
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">{{ paid_orders|length }}</div>
+      <div class="metric-label">Paid Orders</div>
+      <div class="metric-change up">
+        <i class="bi bi-check-circle me-2"></i>Completed
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-value">{{ claim_orders|length }}</div>
+      <div class="metric-label">Claims</div>
+      <div class="metric-change down">
+        <i class="bi bi-exclamation-triangle me-2"></i>Issues
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="data-card">
+      <h5 class="card-title">Filters & Search</h5>
+      <p class="card-subtitle">Refine your order list</p>
+
+      <form method="get" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Customer</label>
+          <select class="form-select" name="customer">
+            <option value="">All Customers</option>
+            {% for c in customers %}
+            <option value="{{ c.id }}" {% if filters.customer == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="status">
+            <option value="">All Statuses</option>
+            <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="paid" {% if filters.status == 'paid' %}selected{% endif %}>Paid</option>
+            <option value="claim" {% if filters.status == 'claim' %}selected{% endif %}>Claim</option>
+            <option value="cancelled" {% if filters.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Date Range</label>
+          <input type="date" class="form-control" name="date" value="{{ filters.date|default:'' }}">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn w-100" style="background-color: var(--accent-magenta); color: white; border: none;">
+            <i class="bi bi-search me-2"></i>Filter
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Orders Table -->
+<div class="row">
+  <div class="col-12">
+    <div class="data-card">
+      <h5 class="card-title">Orders List</h5>
+      <p class="card-subtitle">Showing {{ orders.count }} orders</p>
+
+      {% if orders %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr style="background-color: #f8f9fa;">
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Order ID</th>
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Customer</th>
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Date</th>
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Status</th>
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Currency</th>
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Total Amount</th>
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Branch</th>
+                <th style="border-top: none; color: var(--text-primary); font-weight: 600;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in orders %}
+              <tr style="transition: all 0.2s ease; border-bottom: 1px solid #f0f0f0;">
+                <td>
+                  <strong>{{ order.invoice_code }}</strong>
+                  {% if order.remarks %}
+                    <br><small class="text-muted">{{ order.remarks|truncatechars:30 }}</small>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="me-2">
+                      <i class="bi bi-building" style="color: var(--accent-magenta);"></i>
+                    </div>
+                    <div>
+                      <strong>{{ order.customer.name }}</strong>
+                      {% if order.branch %}
+                        <br><small class="text-muted">{{ order.branch.name }}</small>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="me-2">
+                      <i class="bi bi-calendar3" style="color: var(--text-secondary);"></i>
+                    </div>
+                    <div>
+                      {{ order.date|date:'M d, Y' }}
+                      <br><small class="text-muted">{{ order.date|date:'D' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge" style="background-color:
+                    {% if order.status == 'paid' %}var(--success-green)
+                    {% elif order.status == 'pending' %}var(--warning-orange)
+                    {% elif order.status == 'claim' %}var(--danger-red)
+                    {% else %}#95a5a6{% endif %}; color: white;">
+                    {{ order.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" style="background-color: var(--accent-magenta); color: white; font-size: 0.8rem;">
+                    {{ order.currency|default:"KES" }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="me-2">
+                      <i class="bi bi-currency-exchange" style="color: var(--success-green);"></i>
+                    </div>
+                    <div>
+                      <strong>{{ order.currency|default:"KES" }} {{ order.total_amount|floatformat:2 }}</strong>
+                      {% if order.logistics_cost %}
+                        <br><small class="text-muted">+ {{ order.currency|default:"KES" }} {{ order.logistics_cost|floatformat:2 }} logistics</small>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  {% if order.branch %}
+                    <span class="badge" style="background-color: #3498db; color: white; font-size: 0.8rem;">
+                      {{ order.branch.short_code }}
+                    </span>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <a href="{% url 'orders:order_detail' order.id %}" class="action-btn" style="background-color: var(--accent-magenta); color: white;">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'orders:order_edit' order.id %}" class="action-btn" style="background-color: var(--warning-orange); color: white;">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="#" class="action-btn" style="background-color: var(--success-green); color: white;">
+                      <i class="bi bi-download"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <i class="bi bi-file-earmark-text" style="font-size: 4rem; color: var(--text-secondary);"></i>
+          <h5 class="mt-3 text-muted">No Orders Found</h5>
+          <p class="text-muted">Create your first order to get started</p>
+          <a href="{% url 'orders:order_create' %}" class="btn" style="background-color: var(--accent-magenta); color: white; border: none;">
+            <i class="bi bi-plus-circle me-2"></i>Create Your First Order
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mt-4">
+  <div class="col-md-4 mb-3">
+    <div class="data-card">
+      <h6 class="card-title">Total Value</h6>
+      <div class="metric-value" style="font-size: 1.5rem;">
+        KES {{ total_value|floatformat:2|default:"0.00" }}
+      </div>
+      <p class="card-subtitle">Combined value of all orders</p>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="data-card">
+      <h6 class="card-title">Pending Value</h6>
+      <div class="metric-value" style="font-size: 1.5rem; color: var(--warning-orange);">
+        KES {{ pending_value|floatformat:2|default:"0.00" }}
+      </div>
+      <p class="card-subtitle">Value of pending orders</p>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="data-card">
+      <h6 class="card-title">Paid Value</h6>
+      <div class="metric-value" style="font-size: 1.5rem; color: var(--success-green);">
+        KES {{ paid_value|floatformat:2|default:"0.00" }}
+      </div>
+      <p class="card-subtitle">Value of paid orders</p>
     </div>
   </div>
 </div>

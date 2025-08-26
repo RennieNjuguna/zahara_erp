@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}Employees - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Employees</h1>
+            <p class="text-muted">Manage your staff database and employment records</p>
+        </div>
+        <a href="{% url 'employees:employee_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Employee
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search Employees</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search by name, email, or position...">
+                </div>
+                <div class="col-md-3">
+                    <label for="position" class="form-label">Position</label>
+                    <select class="form-select" id="position" name="position">
+                        <option value="">All Positions</option>
+                        {% for position in positions %}
+                        <option value="{{ position }}" {% if position_filter == position %}selected{% endif %}>
+                            {{ position }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_joined" class="form-label">Date Joined</label>
+                    <input type="date" class="form-control" id="date_joined" name="date_joined" 
+                           value="{{ date_joined_filter }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <a href="{% url 'employees:employee_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <p class="text-muted mb-0">
+                Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ total_employees }} employees
+            </p>
+        </div>
+        <div class="col-md-6 text-end">
+            {% if search_query or position_filter or date_joined_filter %}
+            <span class="badge bg-info">Filtered Results</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Employee</th>
+                            <th>Position</th>
+                            <th>Contact</th>
+                            <th>Date Joined</th>
+                            <th>Years of Service</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employee in page_obj %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        {{ employee.first_name|first|upper }}{{ employee.last_name|first|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ employee.first_name }} {{ employee.last_name }}</h6>
+                                        <small class="text-muted">Employee ID: {{ employee.id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ employee.position }}</span>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="text-truncate" style="max-width: 200px;">
+                                        <i class="bi bi-envelope text-muted me-1"></i>
+                                        {{ employee.email }}
+                                    </div>
+                                    {% if employee.phone_number %}
+                                    <div class="text-truncate" style="max-width: 200px;">
+                                        <i class="bi bi-telephone text-muted me-1"></i>
+                                        {{ employee.phone_number }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-medium">{{ employee.date_joined|date:"M d, Y" }}</span>
+                            </td>
+                            <td>
+                                {% with years=employee.date_joined|date:"Y" %}
+                                {% with current_year=now|date:"Y" %}
+                                {% with service_years=current_year|add:"-"|add:years %}
+                                <span class="badge bg-success">{{ service_years }} year{{ service_years|pluralize:"s" }}</span>
+                                {% endwith %}
+                                {% endwith %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'employees:employee_detail' employee.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="View Employee">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'employees:employee_edit' employee.id %}" 
+                                       class="btn btn-sm btn-outline-secondary" title="Edit Employee">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal{{ employee.id }}" title="Delete Employee">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people display-1 text-muted"></i>
+                <h4 class="mt-3">No employees found</h4>
+                <p class="text-muted">
+                    {% if search_query or position_filter or date_joined_filter %}
+                    Try adjusting your search criteria or 
+                    <a href="{% url 'employees:employee_list' %}">clear all filters</a>.
+                    {% else %}
+                    Get started by adding your first employee.
+                    {% endif %}
+                </p>
+                {% if not search_query and not position_filter and not date_joined_filter %}
+                <a href="{% url 'employees:employee_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add Employee
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Employee pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if position_filter %}&position={{ position_filter }}{% endif %}{% if date_joined_filter %}&date_joined={{ date_joined_filter }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if position_filter %}&position={{ position_filter }}{% endif %}{% if date_joined_filter %}&date_joined={{ date_joined_filter }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if position_filter %}&position={{ position_filter }}{% endif %}{% if date_joined_filter %}&date_joined={{ date_joined_filter }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if position_filter %}&position={{ position_filter }}{% endif %}{% if date_joined_filter %}&date_joined={{ date_joined_filter }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if position_filter %}&position={{ position_filter }}{% endif %}{% if date_joined_filter %}&date_joined={{ date_joined_filter }}{% endif %}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Delete Modals -->
+{% for employee in page_obj %}
+<div class="modal fade" id="deleteModal{{ employee.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>?</p>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    This action cannot be undone. All associated data will be permanently deleted.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'employees:employee_delete' employee.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Employee</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

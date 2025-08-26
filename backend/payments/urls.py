@@ -23,9 +23,17 @@ urlpatterns = [
     # Account statements
     path('statements/', views.account_statement_list, name='account_statement_list'),
     path('statements/<int:statement_id>/', views.account_statement_detail, name='account_statement_detail'),
+    path('statements/<int:statement_id>/pdf/', views.generate_account_statement_pdf, name='generate_account_statement_pdf'),
     path('statements/generate/<int:customer_id>/', views.generate_account_statement, name='generate_account_statement'),
 
     # API endpoints
     path('api/outstanding-orders/<int:customer_id>/', views.get_outstanding_orders, name='api_outstanding_orders'),
     path('api/customer-balance/<int:customer_id>/', views.get_customer_balance, name='api_customer_balance'),
+
+    # Test endpoints
+    path('test-pdf/', views.test_pdf_generation, name='test_pdf_generation'),
+    path('test-html/<int:statement_id>/', views.test_html_preview, name='test_html_preview'),
+
+    # Maintenance endpoints
+    path('recalculate-statements/', views.recalculate_all_statements, name='recalculate_all_statements'),
 ]

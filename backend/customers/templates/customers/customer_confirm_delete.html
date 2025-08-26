@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Customer - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0 text-danger">Delete Customer</h1>
+                    <p class="text-muted">Confirm customer deletion</p>
+                </div>
+                <a href="{% url 'customers:customer_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Customers
+                </a>
+            </div>
+
+            <!-- Confirmation Card -->
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirm Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> Warning!
+                        </h6>
+                        <p class="mb-0">You are about to delete customer <strong>{{ customer.name }}</strong>.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Customer Details:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Name:</strong> {{ customer.name }}</li>
+                            <li><strong>Short Code:</strong> {{ customer.short_code }}</li>
+                            <li><strong>Currency:</strong> {{ customer.preferred_currency }}</li>
+                            <li><strong>Total Branches:</strong> {{ customer.branches.count }}</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> This action cannot be undone!
+                        </h6>
+                        <p class="mb-0">All associated data will be permanently deleted, including:</p>
+                        <ul class="mb-0 mt-2">
+                            <li>Customer information</li>
+                            <li>All branches</li>
+                            <li>Order history</li>
+                            <li>Payment records</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'customers:customer_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Customer Permanently
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

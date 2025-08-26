@@ -93,16 +93,18 @@ class Payment(models.Model):
     @property
     def allocated_amount(self):
         """Total amount allocated to orders"""
-        return self.allocations.aggregate(
+        amount = self.allocations.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
+        return Decimal(str(amount)).quantize(Decimal('0.01'))
 
     @property
     def unallocated_amount(self):
         """Amount not yet allocated to orders"""
         if self.amount is None:
             return Decimal('0.00')
-        return self.amount - self.allocated_amount
+        unallocated = self.amount - self.allocated_amount
+        return Decimal(str(unallocated)).quantize(Decimal('0.01'))
 
     @property
     def is_fully_allocated(self):
@@ -140,7 +142,6 @@ class PaymentAllocation(models.Model):
     allocated_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['payment', 'order']
         indexes = [
             models.Index(fields=['payment', 'order']),
         ]
@@ -198,8 +199,8 @@ class CustomerBalance(models.Model):
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
-        # Calculate balance
-        self.current_balance = total_orders - total_credits - total_payments
+        # Calculate balance and round to 2 decimal places
+        self.current_balance = Decimal(str(total_orders - total_credits - total_payments)).quantize(Decimal('0.01'))
         self.currency = self.customer.preferred_currency
         self.save()
 
@@ -259,13 +260,13 @@ class AccountStatement(models.Model):
             total=Sum('credit_note_items__credit_amount')
         )['total'] or Decimal('0.00')
 
-        # Get payments in period
+        # Get payments in period - include all active payments (completed, pending, but not cancelled/refunded)
         payments_in_period = Payment.objects.filter(
             customer=self.customer,
             payment_date__gte=self.start_date,
-            payment_date__lte=self.end_date,
-            status='completed'
-        )
+            payment_date__lte=self.end_date
+        ).exclude(status__in=['cancelled', 'refunded'])
+
         total_payments = payments_in_period.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
@@ -273,12 +274,12 @@ class AccountStatement(models.Model):
         # Calculate closing balance
         closing_balance = opening_balance + total_orders - total_credits - total_payments
 
-        # Update statement
-        self.opening_balance = opening_balance
-        self.closing_balance = closing_balance
-        self.total_orders = total_orders
-        self.total_credits = total_credits
-        self.total_payments = total_payments
+        # Update statement with proper rounding to 2 decimal places
+        self.opening_balance = Decimal(str(opening_balance)).quantize(Decimal('0.01'))
+        self.closing_balance = Decimal(str(closing_balance)).quantize(Decimal('0.01'))
+        self.total_orders = Decimal(str(total_orders)).quantize(Decimal('0.01'))
+        self.total_credits = Decimal(str(total_credits)).quantize(Decimal('0.01'))
+        self.total_payments = Decimal(str(total_payments)).quantize(Decimal('0.01'))
         self.save()
 
         return {
@@ -290,6 +291,37 @@ class AccountStatement(models.Model):
             'orders': orders_in_period,
             'credits': credits_in_period,
             'payments': payments_in_period,
+        }
+
+    def recalculate_statement(self):
+        """Recalculate statement data - useful for fixing existing statements"""
+        return self.generate_statement_data()
+
+    def check_missing_payments(self):
+        """Check if there are payments that should be included but aren't"""
+        # Get all payments in the period (excluding cancelled/refunded)
+        all_payments = Payment.objects.filter(
+            customer=self.customer,
+            payment_date__gte=self.start_date,
+            payment_date__lte=self.end_date
+        ).exclude(status__in=['cancelled', 'refunded'])
+
+        # Get payments currently in the statement
+        current_payments = Payment.objects.filter(
+            customer=self.customer,
+            payment_date__gte=self.start_date,
+            payment_date__lte=self.end_date,
+            status='completed'
+        )
+
+        # Find missing payments
+        missing_payments = all_payments.exclude(id__in=current_payments.values_list('id', flat=True))
+
+        return {
+            'total_payments': all_payments.count(),
+            'included_payments': current_payments.count(),
+            'missing_payments': missing_payments.count(),
+            'missing_payment_list': missing_payments
         }
 
     def _calculate_balance_before_date(self, target_date):
@@ -310,12 +342,11 @@ class AccountStatement(models.Model):
             total=Sum('credit_note_items__credit_amount')
         )['total'] or Decimal('0.00')
 
-        # Payments before date
+        # Payments before date - include all active payments (completed, pending, but not cancelled/refunded)
         payments_before = Payment.objects.filter(
             customer=self.customer,
-            payment_date__lt=target_date,
-            status='completed'
-        ).aggregate(
+            payment_date__lt=target_date
+        ).exclude(status__in=['cancelled', 'refunded']).aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 

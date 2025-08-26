@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if product %}Edit Product{% else %}Add Product{% endif %} - Zahara ERP
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        {% if product %}Edit Product{% else %}Add New Product{% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {% if product %}
+                        Update product information for {{ product.name }}
+                        {% else %}
+                        Create a new product for your catalog
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Products
+                </a>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Product Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Product Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                                   id="name" 
+                                   name="name" 
+                                   value="{% if product %}{{ product.name }}{% endif %}"
+                                   placeholder="Enter product name (e.g., Rose, Lily, Sunflower)"
+                                   required>
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Choose a descriptive name that customers will recognize.
+                            </div>
+                        </div>
+
+                        <!-- Stem Length -->
+                        <div class="mb-3">
+                            <label for="stem_length_cm" class="form-label">
+                                Stem Length (cm) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       class="form-control {% if form.stem_length_cm.errors %}is-invalid{% endif %}" 
+                                       id="stem_length_cm" 
+                                       name="stem_length_cm" 
+                                       value="{% if product %}{{ product.stem_length_cm }}{% endif %}"
+                                       placeholder="Enter stem length in centimeters"
+                                       min="1" 
+                                       step="1"
+                                       required>
+                                <span class="input-group-text">cm</span>
+                                {% if form.stem_length_cm.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.stem_length_cm.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="form-text">
+                                Standard stem lengths are typically 40cm, 50cm, 60cm, 70cm, or 80cm.
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center pt-3">
+                            <div>
+                                {% if product %}
+                                <a href="{% url 'products:product_detail' product.id %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                                {% else %}
+                                <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if product %}Update Product{% else %}Create Product{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle text-info"></i> Product Management Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Product Names:</strong> Use clear, descriptive names that customers will recognize.</li>
+                        <li><strong>Stem Lengths:</strong> Standard lengths help with pricing and customer expectations.</li>
+                        <li><strong>Pricing:</strong> After creating a product, you can set customer-specific pricing.</li>
+                        <li><strong>Orders:</strong> Products can be added to customer orders once created.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

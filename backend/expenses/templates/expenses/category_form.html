@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if category %}Edit Category{% else %}Add Category{% endif %} - Zahara ERP
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        {% if category %}Edit Category{% else %}Add New Category{% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {% if category %}
+                        Update category information for {{ category.name }}
+                        {% else %}
+                        Create a new expense category
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'expenses:category_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Categories
+                </a>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Category Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="name"
+                                   name="name"
+                                   value="{% if category %}{{ category.name }}{% endif %}"
+                                   placeholder="Enter category name (e.g., Office Supplies)"
+                                   required>
+                            <div class="form-text">
+                                A descriptive name for this expense category.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control"
+                                      id="description"
+                                      name="description"
+                                      rows="3"
+                                      placeholder="Optional description of what this category includes">{% if category %}{{ category.description }}{% endif %}</textarea>
+                            <div class="form-text">
+                                Optional description to help organize expenses.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="color" class="form-label">Color</label>
+                            <div class="input-group">
+                                <input type="color"
+                                       class="form-control form-control-color"
+                                       id="color"
+                                       name="color"
+                                       value="{% if category %}{{ category.color }}{% else %}#007bff{% endif %}"
+                                       title="Choose a color for this category">
+                                <input type="text"
+                                       class="form-control"
+                                       value="{% if category %}{{ category.color }}{% else %}#007bff{% endif %}"
+                                       readonly>
+                            </div>
+                            <div class="form-text">
+                                Choose a color to visually distinguish this category.
+                            </div>
+                        </div>
+
+                        {% if category %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="is_active"
+                                       name="is_active"
+                                       {% if category.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Active Category
+                                </label>
+                                <div class="form-text">
+                                    Inactive categories won't appear in expense forms.
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-center pt-3">
+                            <div>
+                                <a href="{% url 'expenses:category_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if category %}Update Category{% else %}Create Category{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle text-info"></i> Category Management Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Naming:</strong> Use clear, descriptive names that make sense to your team.</li>
+                        <li><strong>Colors:</strong> Choose distinct colors to easily identify categories at a glance.</li>
+                        <li><strong>Descriptions:</strong> Add descriptions to clarify what expenses belong in each category.</li>
+                        <li><strong>Organization:</strong> Group related expenses together for better reporting and analysis.</li>
+                        <li><strong>Status:</strong> Deactivate categories you no longer use instead of deleting them.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update text input when color picker changes
+document.getElementById('color').addEventListener('input', function(e) {
+    e.target.nextElementSibling.value = e.target.value;
+});
+</script>
+{% endblock %}
+
+
+

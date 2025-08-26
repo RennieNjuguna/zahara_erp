@@ -1,320 +1,451 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Customer Balances{% endblock %}
+{% block title %}Customer Balances | Zahara ERP{% endblock %}
 
 {% block content %}
-<div class="customer-balance-list">
-    <form style="display:none;">{% csrf_token %}</form>
-    <div class="header">
-        <h1>Customer Balances</h1>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters">
-        <form method="get" class="filter-form">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="currency">Currency</label>
-                    <select name="currency" id="currency">
-                        <option value="">All Currencies</option>
-                        <option value="KSH" {% if filters.currency == 'KSH' %}selected{% endif %}>KSH</option>
-                        <option value="USD" {% if filters.currency == 'USD' %}selected{% endif %}>USD</option>
-                        <option value="GBP" {% if filters.currency == 'GBP' %}selected{% endif %}>GBP</option>
-                        <option value="EUR" {% if filters.currency == 'EUR' %}selected{% endif %}>EUR</option>
-                    </select>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-calculator me-2"></i>Customer Balances
+                    </h2>
+                    <p class="text-muted mb-0">Track outstanding balances and payment history for all customers</p>
                 </div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'payments:dashboard' %}">Payments</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Customer Balances</li>
+                    </ol>
+                </nav>
+            </div>
 
-                <div class="filter-group">
-                    <label for="search">Search Customer</label>
-                    <input type="text" name="search" id="search" value="{{ filters.search|default:'' }}"
-                           placeholder="Customer name...">
+            <!-- CSRF Token -->
+            <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
+
+            <!-- Summary Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-people text-primary fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Total Customers</h6>
+                                    <h4 class="mb-0 fw-bold">{{ page_obj.paginator.count|default:"0" }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="filter-actions">
-                    <button type="submit" class="btn-primary">Filter</button>
-                    <a href="{% url 'payments:customer_balance_list' %}" class="btn-secondary">Clear</a>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Outstanding Balance</h6>
+                                    <h4 class="mb-0 fw-bold text-warning">
+                                        {% for customer_data in page_obj %}
+                                            {% if forloop.first %}
+                                                {{ customer_data.balance.currency }}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <span id="total-outstanding">0.00</span>
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-check-circle text-success fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Paid Customers</h6>
+                                    <h4 class="mb-0 fw-bold text-success" id="paid-customers">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-currency-exchange text-info fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Currencies</h6>
+                                    <h4 class="mb-0 fw-bold text-info" id="currency-count">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </form>
+
+            <!-- Filters Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">
+                        <i class="bi bi-funnel me-2"></i>Filters & Search
+                    </h6>
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="currency" class="form-label fw-semibold">Currency</label>
+                            <select name="currency" id="currency" class="form-select">
+                                <option value="">All Currencies</option>
+                                <option value="KSH" {% if filters.currency == 'KSH' %}selected{% endif %}>KSH (Kenyan Shilling)</option>
+                                <option value="USD" {% if filters.currency == 'USD' %}selected{% endif %}>USD (US Dollar)</option>
+                                <option value="GBP" {% if filters.currency == 'GBP' %}selected{% endif %}>GBP (British Pound)</option>
+                                <option value="EUR" {% if filters.currency == 'EUR' %}selected{% endif %}>EUR (Euro)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search" class="form-label fw-semibold">Search Customer</label>
+                            <input type="text" name="search" id="search" class="form-control"
+                                   value="{{ filters.search|default:'' }}" placeholder="Customer name...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search me-2"></i>Filter
+                                </button>
+                                <a href="{% url 'payments:customer_balance_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-2"></i>Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Customer Balances Table -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-table me-2"></i>Customer Balance Details
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted small">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="balances-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0">Customer</th>
+                                    <th class="border-0">Total Orders</th>
+                                    <th class="border-0">Total Sales</th>
+                                    <th class="border-0">Currency</th>
+                                    <th class="border-0">Claimed Orders</th>
+                                    <th class="border-0">Paid Orders</th>
+                                    <th class="border-0">Pending Orders</th>
+                                    <th class="border-0">Current Balance</th>
+                                    <th class="border-0">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer_data in page_obj %}
+                                <tr class="customer-row" data-currency="{{ customer_data.balance.currency }}" data-balance="{{ customer_data.balance.current_balance }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                <i class="bi bi-person text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ customer_data.customer.name }}</div>
+                                                <small class="text-muted">{{ customer_data.customer.email|default:"No email" }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ customer_data.total_orders }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">{{ customer_data.total_sales|floatformat:2 }} {{ customer_data.balance.currency }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info">
+                                            {{ customer_data.balance.currency }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">
+                                            {{ customer_data.claimed_orders }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                            {{ customer_data.paid_orders }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">
+                                            {{ customer_data.pending_orders }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold fs-6 {% if customer_data.balance.current_balance > 0 %}text-danger{% elif customer_data.balance.current_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                            {{ customer_data.balance.current_balance|floatformat:2 }} {{ customer_data.balance.currency }}
+                                        </span>
+                                        {% if customer_data.balance.current_balance > 0 %}
+                                            <div class="progress mt-1" style="height: 4px;">
+                                                <div class="progress-bar bg-danger" style="width: 100%"></div>
+                                            </div>
+                                        {% elif customer_data.balance.current_balance < 0 %}
+                                            <div class="progress mt-1" style="height: 4px;">
+                                                <div class="progress-bar bg-success" style="width: 100%"></div>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'payments:customer_balance_detail' customer_data.customer.id %}"
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="recalculateBalance({{ customer_data.customer.id }})" title="Recalculate Balance">
+                                                <i class="bi bi-arrow-clockwise"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                            <h5>No customer balances found</h5>
+                                            <p>No customers match your current filters</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Customer balance pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in filters.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in filters.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in filters.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in filters.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in filters.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
     </div>
-
-    <!-- Balance Table -->
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Customer</th>
-                    <th>Total Number of Orders</th>
-                    <th>Total Sales</th>
-                    <th>Currency</th>
-                    <th>Claimed Orders</th>
-                    <th>Paid Orders</th>
-                    <th>Outstanding Orders</th>
-                    <th>Balance</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for customer_data in page_obj %}
-                <tr>
-                    <td>{{ customer_data.customer.name }}</td>
-                    <td>{{ customer_data.total_orders }}</td>
-                    <td>{{ customer_data.total_sales|floatformat:2 }}</td>
-                    <td>{{ customer_data.balance.currency }}</td>
-                    <td>{{ customer_data.claimed_orders }}</td>
-                    <td>{{ customer_data.paid_orders }}</td>
-                    <td>{{ customer_data.pending_orders }}</td>
-                    <td>
-                        <span class="balance-amount {% if customer_data.balance.current_balance > 0 %}positive{% else %}negative{% endif %}">
-                            {{ customer_data.balance.current_balance|floatformat:2 }}
-                        </span>
-                    </td>
-                    <td>
-                        <a href="{% url 'payments:customer_balance_detail' customer_data.customer.id %}" class="btn-small">View Details</a>
-                        <button onclick="recalculateBalance({{ customer_data.customer.id }})" class="btn-small btn-recalculate">Recalculate</button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9" class="no-data">No customer balances found</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-    <div class="pagination">
-        {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Previous</a>
-        {% endif %}
-
-        <span class="current-page">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-        </span>
-
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Next</a>
-        {% endif %}
-    </div>
-    {% endif %}
 </div>
 
 <script>
+// Calculate summary statistics
+document.addEventListener('DOMContentLoaded', function() {
+    calculateSummaryStats();
+});
+
+function calculateSummaryStats() {
+    const rows = document.querySelectorAll('.customer-row');
+    let totalOutstanding = 0;
+    let paidCustomers = 0;
+    const currencies = new Set();
+
+    rows.forEach(row => {
+        const balance = parseFloat(row.getAttribute('data-balance'));
+        const currency = row.getAttribute('data-currency');
+
+        if (balance > 0) {
+            totalOutstanding += balance;
+        } else if (balance <= 0) {
+            paidCustomers++;
+        }
+
+        currencies.add(currency);
+    });
+
+    document.getElementById('total-outstanding').textContent = totalOutstanding.toFixed(2);
+    document.getElementById('paid-customers').textContent = paidCustomers;
+    document.getElementById('currency-count').textContent = currencies.size;
+}
+
 function recalculateBalance(customerId) {
-    if (confirm('Are you sure you want to recalculate the balance for this customer?')) {
-        fetch(`/payments/balances/${customerId}/recalculate/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Balance recalculated successfully!');
-                location.reload();
-            } else {
-                alert('Error recalculating balance: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error recalculating balance');
-        });
+    if (!confirm('Are you sure you want to recalculate the balance for this customer? This may take a moment.')) {
+        return;
     }
+
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/payments/recalculate-balance/${customerId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Balance recalculated successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error occurred'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Request failed. Please try again.');
+    });
 }
 </script>
 
 <style>
-.customer-balance-list {
-    padding: 20px;
+.card {
+    border-radius: 16px;
+    border: none;
 }
 
-.header {
-    margin-bottom: 30px;
+.table th {
+    font-weight: 600;
+    color: var(--text-primary);
+    border-top: none;
+    padding: 1rem;
 }
 
-.filters {
-    background: #f8f9fa;
-    padding: 20px;
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #dee2e6;
 }
 
-.filter-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+.progress {
+    border-radius: 10px;
+    background-color: #e9ecef;
 }
 
-.filter-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    align-items: end;
+.btn-group .btn {
+    border-radius: 8px;
+    margin-right: 0.25rem;
 }
 
-.filter-group {
-    display: flex;
-    flex-direction: column;
+.btn-group .btn:last-child {
+    margin-right: 0;
 }
 
-.filter-group label {
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #495057;
-}
-
-.filter-group input,
-.filter-group select {
-    padding: 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.filter-actions {
-    display: flex;
-    gap: 10px;
-    align-items: end;
-}
-
-.table-container {
-    overflow-x: auto;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.data-table th,
-.data-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.data-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-}
-
-.balance-amount {
-    font-weight: bold;
-}
-
-.balance-amount.positive {
-    color: #dc3545;
-}
-
-.balance-amount.negative {
-    color: #28a745;
-}
-
-.btn-small {
-    display: inline-block;
-    padding: 4px 8px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 3px;
-    font-size: 12px;
-    margin-right: 5px;
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 0.25rem;
     border: none;
-    cursor: pointer;
+    color: var(--text-primary);
 }
 
-.btn-small:hover {
-    background-color: #0056b3;
+.pagination .page-item.active .page-link {
+    background-color: var(--accent-magenta);
+    border-color: var(--accent-magenta);
+}
+
+.pagination .page-link:hover {
+    background-color: var(--accent-magenta);
     color: white;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+}
+
+.breadcrumb-item a {
+    color: var(--accent-magenta);
     text-decoration: none;
 }
 
-.btn-recalculate {
-    background-color: #ffc107;
-    color: #212529;
+.breadcrumb-item.active {
+    color: var(--text-secondary);
 }
 
-.btn-recalculate:hover {
-    background-color: #e0a800;
-    color: #212529;
+/* Currency badge styling */
+.badge.bg-info.bg-opacity-10 {
+    background-color: rgba(13, 202, 240, 0.1) !important;
 }
 
-.btn-primary {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    text-decoration: none;
-    display: inline-block;
+.badge.bg-warning.bg-opacity-10 {
+    background-color: rgba(255, 193, 7, 0.1) !important;
 }
 
-.btn-primary:hover {
-    background-color: #0056b3;
-    color: white;
-    text-decoration: none;
+.badge.bg-success.bg-opacity-10 {
+    background-color: rgba(25, 135, 84, 0.1) !important;
 }
 
-.btn-secondary {
-    background-color: #6c757d;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.btn-secondary:hover {
-    background-color: #545b62;
-    color: white;
-    text-decoration: none;
-}
-
-.no-data {
-    text-align: center;
-    color: #6c757d;
-    font-style: italic;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    margin-top: 20px;
-    padding: 20px 0;
-}
-
-.page-link {
-    padding: 8px 16px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-}
-
-.page-link:hover {
-    background-color: #0056b3;
-    color: white;
-    text-decoration: none;
-}
-
-.current-page {
-    font-weight: bold;
-    color: #495057;
+.badge.bg-danger.bg-opacity-10 {
+    background-color: rgba(220, 53, 69, 0.1) !important;
 }
 </style>
 {% endblock %}

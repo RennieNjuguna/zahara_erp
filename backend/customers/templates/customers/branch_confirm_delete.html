@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Branch - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0 text-danger">Delete Branch</h1>
+                    <p class="text-muted">Confirm branch deletion</p>
+                </div>
+                <a href="{% url 'customers:customer_detail' branch.customer.id %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Customer
+                </a>
+            </div>
+
+            <!-- Confirmation Card -->
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirm Deletion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> Warning!
+                        </h6>
+                        <p class="mb-0">You are about to delete branch <strong>{{ branch.name }}</strong>.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Branch Details:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Name:</strong> {{ branch.name }}</li>
+                            <li><strong>Short Code:</strong> {{ branch.short_code }}</li>
+                            <li><strong>Customer:</strong> {{ branch.customer.name }}</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> This action cannot be undone!
+                        </h6>
+                        <p class="mb-0">The branch will be permanently deleted.</p>
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'customers:customer_detail' branch.customer.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Branch Permanently
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

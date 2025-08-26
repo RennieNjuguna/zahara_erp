@@ -210,7 +210,35 @@ class Order(models.Model):
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
-        return self.total_amount - total_payments - total_credits
+        outstanding = self.total_amount - total_payments - total_credits
+        return Decimal(str(outstanding)).quantize(Decimal('0.01'))
+
+    def payment_status(self):
+        """Get payment status of the order"""
+        outstanding = self.outstanding_amount()
+        if outstanding <= 0:
+            return 'fully_paid'
+        elif outstanding < self.total_amount:
+            return 'partially_paid'
+        else:
+            return 'unpaid'
+
+    def get_payment_status_display(self):
+        """Get human-readable payment status"""
+        status = self.payment_status()
+        if status == 'fully_paid':
+            return 'Fully Paid'
+        elif status == 'partially_paid':
+            return 'Partially Paid'
+        else:
+            return 'Unpaid'
+
+    def total_paid_amount(self):
+        """Calculate total amount paid for this order"""
+        total_payments = self.new_payment_allocations.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+        return Decimal(str(total_payments)).quantize(Decimal('0.01'))
 
     def subtotal_amount(self):
         """Calculate subtotal amount (items only, excluding logistics)"""

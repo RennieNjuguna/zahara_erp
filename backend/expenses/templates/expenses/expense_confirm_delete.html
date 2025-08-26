@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Expense - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center mb-4">
+                <h1 class="h3 mb-0">Delete Expense</h1>
+                <p class="text-muted">Confirm expense deletion</p>
+            </div>
+
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Warning: Expense Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h5 class="text-danger">Are you sure?</h5>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> This action cannot be undone!
+                        </h6>
+                        <p class="mb-0">You are about to permanently delete the expense <strong>"{{ expense.name }}"</strong>.</p>
+                    </div>
+
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Expense Details</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Name:</strong> {{ expense.name }}</li>
+                                <li><strong>Amount:</strong> {{ expense.amount }} {{ expense.currency }}</li>
+                                <li><strong>Category:</strong> {% if expense.category %}{{ expense.category.name }}{% else %}No category{% endif %}</li>
+                                <li><strong>Date:</strong> {{ expense.date_incurred|date:"M d, Y" }}</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger mt-3">
+                        <h6 class="alert-heading">What will be deleted:</h6>
+                        <ul class="mb-0">
+                            <li>The expense "{{ expense.name }}"</li>
+                            <li>All associated attachments and files</li>
+                            <li>All expense records and history</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'expenses:expense_detail' expense.id %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete Expense Permanently
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

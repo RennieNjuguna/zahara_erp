@@ -1,174 +1,459 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Payment Dashboard{% endblock %}
+{% block title %}Payment Dashboard | Zahara ERP{% endblock %}
 
 {% block content %}
-<div class="payment-dashboard">
-    <h1>Payment Management Dashboard</h1>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-credit-card me-2"></i>Payment Dashboard
+                    </h2>
+                    <p class="text-muted mb-0">Monitor payments, outstanding balances, and financial overview</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'payments:payment_create' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Create Payment
+                    </a>
+                    <a href="{% url 'payments:payment_list' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-list-ul me-2"></i>View All
+                    </a>
+                </div>
+            </div>
 
-    <!-- Summary Statistics -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <h3>Total Payments</h3>
-            <p class="stat-value">{{ total_payments|floatformat:2 }}</p>
-        </div>
-        <div class="stat-card">
-            <h3>Total Outstanding</h3>
-            <p class="stat-value">{{ total_outstanding|floatformat:2 }}</p>
-        </div>
-        <div class="stat-card">
-            <h3>Recent Payments</h3>
-            <p class="stat-value">{{ recent_payments.count }}</p>
-        </div>
-    </div>
+            <!-- Summary Statistics Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-currency-dollar text-success fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Total Payments</h6>
+                                    <h4 class="mb-0 fw-bold text-success">
+                                        {{ total_payments|floatformat:2 }}
+                                    </h4>
+                                    <small class="text-muted">All completed payments</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Outstanding Balance</h6>
+                                    <h4 class="mb-0 fw-bold text-warning">
+                                        {{ total_outstanding|floatformat:2 }}
+                                    </h4>
+                                    <small class="text-muted">Total customer debt</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-clock-history text-info fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Recent Payments</h6>
+                                    <h4 class="mb-0 fw-bold text-info">
+                                        {{ recent_payments.count }}
+                                    </h4>
+                                    <small class="text-muted">Last 10 payments</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-danger bg-opacity-10 rounded-circle p-3">
+                                        <i class="bi bi-people text-danger fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title text-muted mb-1">Customers with Balances</h6>
+                                    <h4 class="mb-0 fw-bold text-danger">
+                                        {{ customers_with_balances.count }}
+                                    </h4>
+                                    <small class="text-muted">Outstanding balances</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- Recent Payments -->
-    <div class="section">
-        <h2>Recent Payments</h2>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Customer</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for payment in recent_payments %}
-                <tr>
-                    <td>{{ payment.customer.name }}</td>
-                    <td>{{ payment.amount }} {{ payment.currency }}</td>
-                    <td>{{ payment.get_payment_method_display }}</td>
-                    <td>{{ payment.payment_date }}</td>
-                    <td>{{ payment.get_status_display }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">No recent payments</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            <!-- Quick Actions Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-lightning me-2"></i>Quick Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <a href="{% url 'payments:payment_create' %}" class="btn btn-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4">
+                                        <i class="bi bi-plus-circle fs-1 mb-2"></i>
+                                        <span>Create Payment</span>
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a href="{% url 'payments:payment_list' %}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4">
+                                        <i class="bi bi-list-ul fs-1 mb-2"></i>
+                                        <span>All Payments</span>
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a href="{% url 'payments:customer_balance_list' %}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4">
+                                        <i class="bi bi-calculator fs-1 mb-2"></i>
+                                        <span>Customer Balances</span>
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a href="{% url 'payments:account_statement_list' %}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-4">
+                                        <i class="bi bi-file-earmark-text fs-1 mb-2"></i>
+                                        <span>Account Statements</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-graph-up me-2"></i>Payment Analytics
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">Payment Completion Rate</h6>
+                                    <div class="progress" style="height: 8px;">
+                                        {% if total_outstanding > 0 %}
+                                            {% widthratio total_payments total_payments|add:total_outstanding 100 as completion_rate %}
+                                            <div class="progress-bar bg-success" style="width: {{ completion_rate }}%"></div>
+                                        {% else %}
+                                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="ms-3 text-end">
+                                    {% if total_outstanding > 0 %}
+                                        {% widthratio total_payments total_payments|add:total_outstanding 100 as completion_rate %}
+                                        <h5 class="mb-0 text-success">{{ completion_rate }}%</h5>
+                                    {% else %}
+                                        <h5 class="mb-0 text-success">100%</h5>
+                                    {% endif %}
+                                    <small class="text-muted">Complete</small>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <h6 class="text-muted mb-1">Total Revenue</h6>
+                                        <h5 class="mb-0 text-success">{{ total_payments|floatformat:2 }}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <h6 class="text-muted mb-1">Outstanding</h6>
+                                        <h5 class="mb-0 text-warning">{{ total_outstanding|floatformat:2 }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- Customers with Balances -->
-    <div class="section">
-        <h2>Customers with Outstanding Balances</h2>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Customer</th>
-                    <th>Current Balance</th>
-                    <th>Currency</th>
-                    <th>Last Updated</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for balance in customers_with_balances %}
-                <tr>
-                    <td>{{ balance.customer.name }}</td>
-                    <td>{{ balance.current_balance|floatformat:2 }}</td>
-                    <td>{{ balance.currency }}</td>
-                    <td>{{ balance.last_updated|date:"M d, Y" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4">No customers with outstanding balances</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            <!-- Recent Payments Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-clock-history me-2"></i>Recent Payments
+                        </h5>
+                        <a href="{% url 'payments:payment_list' %}" class="btn btn-sm btn-outline-primary">
+                            View All <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_payments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-0">Customer</th>
+                                        <th class="border-0">Amount</th>
+                                        <th class="border-0">Method</th>
+                                        <th class="border-0">Date</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in recent_payments %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-person text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">{{ payment.customer.name }}</div>
+                                                    <small class="text-muted">{{ payment.payment_id|truncatechars:8 }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold fs-6">{{ payment.amount|floatformat:2 }} {{ payment.currency }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-{% if payment.payment_method == 'cash' %}cash-coin{% elif payment.payment_method == 'bank_transfer' %}bank{% elif payment.payment_method == 'check' %}card-text{% elif payment.payment_method == 'credit_card' %}credit-card{% elif payment.payment_method == 'mobile_money' %}phone{% else %}question-circle{% endif %} me-1"></i>
+                                                {{ payment.get_payment_method_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="text-muted">{{ payment.payment_date|date:"M d, Y" }}</div>
+                                            <small class="text-muted">{{ payment.payment_date|date:"D" }}</small>
+                                        </td>
+                                        <td>
+                                            {% if payment.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif payment.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif payment.status == 'cancelled' %}
+                                                <span class="badge bg-danger">Cancelled</span>
+                                            {% elif payment.status == 'refunded' %}
+                                                <span class="badge bg-info">Refunded</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'payments:payment_detail' payment.payment_id %}"
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'payments:payment_edit' payment.payment_id %}"
+                                                   class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <h5>No recent payments</h5>
+                                <p>Create your first payment to get started</p>
+                                <a href="{% url 'payments:payment_create' %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-2"></i>Create Payment
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <h2>Quick Actions</h2>
-        <div class="action-buttons">
-            <a href="{% url 'payments:payment_create' %}" class="button">Create Payment</a>
-            <a href="{% url 'payments:payment_list' %}" class="button">View All Payments</a>
-            <a href="{% url 'payments:customer_balance_list' %}" class="button">Customer Balances</a>
-            <a href="{% url 'payments:account_statement_list' %}" class="button">Account Statements</a>
+            <!-- Customers with Outstanding Balances -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Customers with Outstanding Balances
+                        </h5>
+                        <a href="{% url 'payments:customer_balance_list' %}" class="btn btn-sm btn-outline-warning">
+                            View All <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if customers_with_balances %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-0">Customer</th>
+                                        <th class="border-0">Current Balance</th>
+                                        <th class="border-0">Currency</th>
+                                        <th class="border-0">Last Updated</th>
+                                        <th class="border-0">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for balance in customers_with_balances %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-person text-warning"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">{{ balance.customer.name }}</div>
+                                                    <small class="text-muted">{{ balance.customer.email|default:"No email" }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold fs-6 text-danger">{{ balance.current_balance|floatformat:2 }} {{ balance.currency }}</span>
+                                            <div class="progress mt-1" style="height: 4px;">
+                                                <div class="progress-bar bg-danger" style="width: 100%"></div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info">
+                                                {{ balance.currency }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="text-muted">{{ balance.last_updated|date:"M d, Y" }}</div>
+                                            <small class="text-muted">{{ balance.last_updated|date:"H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'payments:customer_balance_detail' balance.customer.id %}"
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'payments:payment_create' %}?customer={{ balance.customer.id }}"
+                                                   class="btn btn-sm btn-outline-success" title="Create Payment">
+                                                    <i class="bi bi-plus-circle"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-check-circle fs-1 d-block mb-3 text-success"></i>
+                                <h5>All customers are up to date!</h5>
+                                <p>No outstanding balances found</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
-.payment-dashboard {
-    padding: 20px;
+.card {
+    border-radius: 16px;
+    border: none;
 }
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+.table th {
+    font-weight: 600;
+    color: var(--text-primary);
+    border-top: none;
+    padding: 1rem;
 }
 
-.stat-card {
-    background: #f8f9fa;
-    padding: 20px;
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 8px;
-    text-align: center;
-    border: 1px solid #dee2e6;
 }
 
-.stat-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: #007bff;
-    margin: 10px 0 0 0;
+.progress {
+    border-radius: 10px;
+    background-color: #e9ecef;
 }
 
-.section {
-    margin-bottom: 30px;
+.btn-group .btn {
+    border-radius: 8px;
+    margin-right: 0.25rem;
 }
 
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
+.btn-group .btn:last-child {
+    margin-right: 0;
 }
 
-.data-table th,
-.data-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #dee2e6;
+/* Quick action buttons styling */
+.btn.w-100.h-100 {
+    border-radius: 12px;
+    transition: all 0.3s ease;
 }
 
-.data-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
+.btn.w-100.h-100:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.quick-actions {
-    margin-top: 30px;
+/* Currency badge styling */
+.badge.bg-info.bg-opacity-10 {
+    background-color: rgba(13, 202, 240, 0.1) !important;
 }
 
-.action-buttons {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-top: 15px;
+.badge.bg-warning.bg-opacity-10 {
+    background-color: rgba(255, 193, 7, 0.1) !important;
 }
 
-.button {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+.badge.bg-success.bg-opacity-10 {
+    background-color: rgba(25, 135, 84, 0.1) !important;
 }
 
-.button:hover {
-    background-color: #0056b3;
-    color: white;
-    text-decoration: none;
+.badge.bg-danger.bg-opacity-10 {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Analytics card styling */
+.bg-light {
+    background-color: #f8f9fa !important;
+    border-radius: 8px;
+}
+
+/* Progress bar styling */
+.progress-bar {
+    border-radius: 10px;
 }
 </style>
 {% endblock %}

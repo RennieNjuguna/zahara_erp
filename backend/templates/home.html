@@ -1,31 +1,165 @@
-{% extends "base.html" %}
-{% block title %}Home | Zahara ERP{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Zahara ERP{% endblock %}
+
 {% block content %}
-<div class="row g-4">
-  <div class="col-md-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <h5 class="card-title">Orders</h5>
-        <p class="card-text">Create and manage customer orders, items, and logistics.</p>
-        <a class="btn btn-primary" href="/orders/">Open Orders</a>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h1>Hello, Renny</h1>
+      <p>Your current sales summary and activity.</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="view-buttons">
+        <a href="#" class="view-btn">
+          <i class="bi bi-bar-chart me-2"></i>Graphical View
+        </a>
+        <a href="#" class="view-btn">
+          <i class="bi bi-graph-up me-2"></i>Trends
+        </a>
       </div>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <h5 class="card-title">Payments</h5>
-        <p class="card-text">Record payments, allocate to orders, and view balances.</p>
-        <a class="btn btn-primary" href="/payments/">Open Payments</a>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-change up">
+        <i class="bi bi-arrow-up me-2"></i>10%
+      </div>
+      <div class="metric-value">KES 2,837.90</div>
+      <div class="metric-label">Today's revenue</div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-change down">
+        <i class="bi bi-arrow-down me-2"></i>6%
+      </div>
+      <div class="metric-value">KES 25,938.86</div>
+      <div class="metric-label">Today's expenses</div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-badge">2 New</div>
+      <div class="metric-value">KES 6,947.00</div>
+      <div class="metric-label">Overdue Orders</div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-badge">9 New</div>
+      <div class="metric-value">KES 6,947.00</div>
+      <div class="metric-label">Upcoming Payments</div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Cards Row -->
+<div class="row">
+  <!-- Invoices Table -->
+  <div class="col-md-8 mb-4">
+    <div class="data-card">
+      <h5 class="card-title">Orders</h5>
+      <p class="card-subtitle">This data was last updated at 21st August 2025, 0734hrs</p>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Status</th>
+              <th>Company</th>
+              <th>View</th>
+              <th>Download</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>ORD-U7263</strong></td>
+              <td><span class="status-badge status-paid">Paid</span></td>
+              <td>Maxfter Inc.</td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">View</a></td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">Download</a></td>
+            </tr>
+            <tr>
+              <td><strong>ORD-U7264</strong></td>
+              <td><span class="status-badge status-refunded">Refunded</span></td>
+              <td>Meta Inc.</td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">View</a></td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">Download</a></td>
+            </tr>
+            <tr>
+              <td><strong>ORD-U7265</strong></td>
+              <td><span class="status-badge status-paid">Paid</span></td>
+              <td>Bima Traders</td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">View</a></td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">Download</a></td>
+            </tr>
+            <tr>
+              <td><strong>ORD-U7266</strong></td>
+              <td><span class="status-badge status-paid">Paid</span></td>
+              <td>Meta Corp</td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">View</a></td>
+              <td><a href="#" class="text-decoration-none" style="color: var(--accent-magenta);">Download</a></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <h5 class="card-title">Admin</h5>
-        <p class="card-text">Manage data and reports in Django Admin.</p>
-        <a class="btn btn-outline-secondary" href="/admin/">Open Admin</a>
+
+  <!-- Recent Transactions -->
+  <div class="col-md-4 mb-4">
+    <div class="data-card">
+      <h5 class="card-title" style="color: var(--accent-magenta);">Recent Transactions</h5>
+      <p class="card-subtitle">Updated 20 mins ago</p>
+
+      <div class="transaction-item">
+        <div>
+          <div class="transaction-company">Bima Traders</div>
+          <div class="transaction-time">Wednesday 1:00pm</div>
+        </div>
+        <div class="transaction-amount positive">+ KES 38,948.00</div>
+      </div>
+
+      <div class="transaction-item">
+        <div>
+          <div class="transaction-company">Meta Corp</div>
+          <div class="transaction-time">Wednesday 12:30pm</div>
+        </div>
+        <div class="transaction-amount negative">- KES 450.00</div>
+      </div>
+
+      <div class="transaction-item">
+        <div>
+          <div class="transaction-company">Maxfter Inc.</div>
+          <div class="transaction-time">Wednesday 12:00pm</div>
+        </div>
+        <div class="transaction-amount positive">+ KES 12,500.00</div>
+      </div>
+
+      <div class="transaction-item">
+        <div>
+          <div class="transaction-company">Meta Inc.</div>
+          <div class="transaction-time">Wednesday 11:45am</div>
+        </div>
+        <div class="transaction-amount positive">+ KES 8,750.00</div>
+      </div>
+
+      <div class="transaction-item">
+        <div>
+          <div class="transaction-company">Bima Traders</div>
+          <div class="transaction-time">Wednesday 11:30am</div>
+        </div>
+        <div class="transaction-amount negative">- KES 1,200.00</div>
       </div>
     </div>
   </div>

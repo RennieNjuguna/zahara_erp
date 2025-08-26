@@ -1,54 +1,371 @@
 {% extends "base.html" %}
-{% block title %}Statement {{ statement.id }}{% endblock %}
+{% load static %}
+
+{% block title %}Statement {{ statement.id }} | Zahara ERP{% endblock %}
+
 {% block content %}
-<h3 class="mb-3">{{ statement.customer.name }} — {{ statement.statement_date|date:'F Y' }}</h3>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-file-earmark-text me-2"></i>{{ statement.customer.name }}
+                    </h2>
+                    <p class="text-muted mb-0">Account Statement for {{ statement.statement_date|date:'F Y' }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'payments:account_statement_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Statements
+                    </a>
+                    <a href="{% url 'payments:test_html_preview' statement.id %}" class="btn btn-info" target="_blank">
+                        <i class="bi bi-eye me-2"></i>Preview HTML
+                    </a>
+                    <a href="{% url 'payments:generate_account_statement_pdf' statement.id %}" class="btn btn-primary">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Generate PDF
+                    </a>
+                    {% if statement.pdf_file %}
+                    <a href="{{ statement.pdf_file.url }}" target="_blank" class="btn btn-success">
+                        <i class="bi bi-download me-2"></i>Download PDF
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
 
-<div class="row g-4">
-  <div class="col-md-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between"><span class="text-muted">Opening</span><strong>{{ statement.opening_balance }}</strong></div>
-        <div class="d-flex justify-content-between"><span class="text-muted">Closing</span><strong>{{ statement.closing_balance }}</strong></div>
-        <div class="d-flex justify-content-between"><span class="text-muted">Total Orders</span><span>{{ statement.total_orders }}</span></div>
-        <div class="d-flex justify-content-between"><span class="text-muted">Total Credits</span><span>{{ statement.total_credits }}</span></div>
-        <div class="d-flex justify-content-between"><span class="text-muted">Total Payments</span><span>{{ statement.total_payments }}</span></div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-8">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">Transactions ({{ statement.start_date }} to {{ statement.end_date }})</h5>
-        <div class="row">
-          <div class="col-md-4">
-            <h6>Orders</h6>
-            <ul class="small">
-              {% for o in statement_data.orders %}
-              <li>{{ o.invoice_code }} — {{ o.date|date:'Y-m-d' }} — {{ o.total_amount }}</li>
-              {% empty %}<li class="text-muted">None</li>{% endfor %}
-            </ul>
-          </div>
-          <div class="col-md-4">
-            <h6>Credits</h6>
-            <ul class="small">
-              {% for c in statement_data.credits %}
-              <li>{{ c.code }} — {{ c.created_at|date:'Y-m-d' }}</li>
-              {% empty %}<li class="text-muted">None</li>{% endfor %}
-            </ul>
-          </div>
-          <div class="col-md-4">
-            <h6>Payments</h6>
-            <ul class="small">
-              {% for p in statement_data.payments %}
-              <li>{{ p.payment_date|date:'Y-m-d' }} — {{ p.amount }} {{ p.currency }}</li>
-              {% empty %}<li class="text-muted">None</li>{% endfor %}
-            </ul>
-          </div>
+            <!-- Statement Summary Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-info bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-calendar-range text-info fs-4"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-1">Statement Period</h6>
+                            <h5 class="mb-0 fw-bold text-info">
+                                {{ statement.start_date|date:"M d" }} - {{ statement.end_date|date:"M d, Y" }}
+                            </h5>
+                            <small class="text-muted">{{ statement.statement_date|date:"F Y" }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-arrow-up-circle text-warning fs-4"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-1">Opening Balance</h6>
+                            <h5 class="mb-0 fw-bold {% if statement.opening_balance > 0 %}text-danger{% elif statement.opening_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                {{ statement.opening_balance|floatformat:2 }} {{ statement.customer.preferred_currency }}
+                            </h5>
+                            <small class="text-muted">Balance at start of period</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-danger bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-arrow-down-circle text-danger fs-4"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-1">Closing Balance</h6>
+                            <h5 class="mb-0 fw-bold {% if statement.closing_balance > 0 %}text-danger{% elif statement.closing_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                {{ statement.closing_balance|floatformat:2 }} {{ statement.customer.preferred_currency }}
+                            </h5>
+                            <small class="text-muted">Balance at end of period</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-calculator text-primary fs-4"></i>
+                            </div>
+                            <h6 class="card-title text-muted mb-1">Net Change</h6>
+                            {% with net_change=statement.closing_balance|add:statement.opening_balance|add:"-" %}
+                            <h5 class="mb-0 fw-bold {% if net_change > 0 %}text-danger{% elif net_change < 0 %}text-success{% else %}text-muted{% endif %}">
+                                {{ net_change|floatformat:2 }} {{ statement.customer.preferred_currency }}
+                            </h5>
+                            {% endwith %}
+                            <small class="text-muted">Period change</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-success bg-opacity-10 border-0">
+                            <h5 class="card-title mb-0 text-success">
+                                <i class="bi bi-cart-plus me-2"></i>Orders & Invoices
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-muted">Total Orders</span>
+                                <span class="fw-bold fs-5 text-success">{{ statement.total_orders|floatformat:2 }} {{ statement.customer.preferred_currency }}</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: 100%"></div>
+                            </div>
+                            <div class="text-center">
+                                <small class="text-muted">New invoices during period</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-warning bg-opacity-10 border-0">
+                            <h5 class="card-title mb-0 text-warning">
+                                <i class="bi bi-arrow-return-left me-2"></i>Credits & Adjustments
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-muted">Total Credits</span>
+                                <span class="fw-bold fs-5 text-warning">{{ statement.total_credits|floatformat:2 }} {{ statement.customer.preferred_currency }}</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-warning" style="width: 100%"></div>
+                            </div>
+                            <div class="text-center">
+                                <small class="text-muted">Credits and adjustments</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-info bg-opacity-10 border-0">
+                            <h5 class="card-title mb-0 text-info">
+                                <i class="bi bi-credit-card me-2"></i>Payments Received
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-muted">Total Payments</span>
+                                <span class="fw-bold fs-5 text-info">{{ statement.total_payments|floatformat:2 }} {{ statement.customer.preferred_currency }}</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-info" style="width: 100%"></div>
+                            </div>
+                            <div class="text-center">
+                                <small class="text-muted">Payments during period</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Details -->
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-cart me-2"></i>Orders & Invoices
+                                <span class="badge bg-success ms-2">{{ statement_data.orders.count }}</span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if statement_data.orders %}
+                                <div class="list-group list-group-flush">
+                                    {% for order in statement_data.orders %}
+                                    <div class="list-group-item border-0 px-0 py-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold">{{ order.invoice_code }}</div>
+                                                <small class="text-muted">{{ order.date|date:"M d, Y" }}</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="fw-bold text-success">{{ order.total_amount|floatformat:2 }} {{ order.currency }}</div>
+                                                <small class="badge bg-{% if order.status == 'paid' %}success{% elif order.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                                    {{ order.get_status_display }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-inbox text-muted fs-1 d-block mb-2"></i>
+                                    <p class="text-muted mb-0">No orders in this period</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-arrow-return-left me-2"></i>Credits & Adjustments
+                                <span class="badge bg-warning ms-2">{{ statement_data.credits.count }}</span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if statement_data.credits %}
+                                <div class="list-group list-group-flush">
+                                    {% for credit in statement_data.credits %}
+                                    <div class="list-group-item border-0 px-0 py-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold">{{ credit.code }}</div>
+                                                <small class="text-muted">{{ credit.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="fw-bold text-warning">
+                                                    {{ credit.total_amount|floatformat:2 }} {{ credit.order.currency }}
+                                                </div>
+                                                <small class="text-muted">Credit Note</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-arrow-return-left text-muted fs-1 d-block mb-2"></i>
+                                    <p class="text-muted mb-0">No credits in this period</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-transparent border-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-credit-card me-2"></i>Payments Received
+                                <span class="badge bg-info ms-2">{{ statement_data.payments.count }}</span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if statement_data.payments %}
+                                <div class="list-group list-group-flush">
+                                    {% for payment in statement_data.payments %}
+                                    <div class="list-group-item border-0 px-0 py-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold">{{ payment.payment_id }}</div>
+                                                <small class="text-muted">{{ payment.payment_date|date:"M d, Y" }}</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="fw-bold text-info">{{ payment.amount|floatformat:2 }} {{ payment.currency }}</div>
+                                                <small class="badge bg-{{ payment.payment_method }}">
+                                                    {{ payment.get_payment_method_display }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-credit-card text-muted fs-1 d-block mb-2"></i>
+                                    <p class="text-muted mb-0">No payments in this period</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Reconciliation -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calculator me-2"></i>Balance Reconciliation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted mb-1">Opening Balance</h6>
+                                <h5 class="mb-0 {% if statement.opening_balance > 0 %}text-danger{% elif statement.opening_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                    {{ statement.opening_balance|floatformat:2 }}
+                                </h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted mb-1">+ Orders</h6>
+                                <h5 class="mb-0 text-success">+{{ statement.total_orders|floatformat:2 }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted mb-1">- Credits</h6>
+                                <h5 class="mb-0 text-warning">-{{ statement.total_credits|floatformat:2 }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted mb-1">- Payments</h6>
+                                <h5 class="mb-0 text-info">-{{ statement.total_payments|floatformat:2 }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <h4 class="mb-0">
+                            <span class="text-muted">= Closing Balance:</span>
+                            <span class="fw-bold ms-2 {% if statement.closing_balance > 0 %}text-danger{% elif statement.closing_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                {{ statement.closing_balance|floatformat:2 }} {{ statement.customer.preferred_currency }}
+                            </span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
+
+<style>
+.card {
+    border-radius: 16px;
+    border: none;
+}
+
+.list-group-item {
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+}
+
+.progress {
+    border-radius: 10px;
+    background-color: #e9ecef;
+}
+
+.bg-success {
+    background-color: #198754 !important;
+}
+
+.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.bg-info {
+    background-color: #0dcaf0 !important;
+}
+
+.bg-secondary {
+    background-color: #6c757d !important;
+}
+</style>
 {% endblock %}
-
-

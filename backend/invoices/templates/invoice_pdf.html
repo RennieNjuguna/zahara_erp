@@ -292,7 +292,8 @@
                 <h3>Consignee Details</h3>
                 <div class="details-text">
                     {{ invoice.order.customer.name }}<br>
-                    {% if invoice.order.branch %}Branch: {{ invoice.order.branch.name }}{% endif %}
+                    {% if invoice.order.branch %}Branch: {{ invoice.order.branch.name }}<br>{% endif %}
+                    {% if invoice.order.remarks %}<br><strong>Remarks:</strong><br>{{ invoice.order.remarks }}{% endif %}
                 </div>
             </div>
 

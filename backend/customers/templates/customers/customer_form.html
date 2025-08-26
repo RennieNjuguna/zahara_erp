@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if customer %}Edit Customer{% else %}Add Customer{% endif %} - Zahara ERP
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        {% if customer %}Edit Customer{% else %}Add New Customer{% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {% if customer %}
+                        Update customer information for {{ customer.name }}
+                        {% else %}
+                        Create a new customer in your database
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'customers:customer_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Customers
+                </a>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Customer Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Customer Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{% if customer %}{{ customer.name }}{% endif %}" 
+                                   required placeholder="Enter customer name">
+                            <div class="invalid-feedback">
+                                Please provide a customer name.
+                            </div>
+                        </div>
+
+                        <!-- Short Code -->
+                        <div class="mb-3">
+                            <label for="short_code" class="form-label">
+                                Short Code <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="short_code" name="short_code" 
+                                   value="{% if customer %}{{ customer.short_code }}{% endif %}" 
+                                   required placeholder="Enter short code (e.g., CUST001)" 
+                                   maxlength="10">
+                            <div class="form-text">
+                                A unique identifier for the customer (max 10 characters)
+                            </div>
+                            <div class="invalid-feedback">
+                                Please provide a short code.
+                            </div>
+                        </div>
+
+                        <!-- Preferred Currency -->
+                        <div class="mb-4">
+                            <label for="preferred_currency" class="form-label">
+                                Preferred Currency <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="preferred_currency" name="preferred_currency" required>
+                                <option value="">Select currency...</option>
+                                {% for code, name in currency_choices %}
+                                <option value="{{ code }}" 
+                                        {% if customer and customer.preferred_currency == code %}selected{% endif %}>
+                                    {{ code }} - {{ name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a preferred currency.
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'customers:customer_list' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if customer %}Update Customer{% else %}Create Customer{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle"></i> About Customer Management
+                    </h6>
+                    <ul class="mb-0">
+                        <li><strong>Short Code:</strong> Must be unique across all customers</li>
+                        <li><strong>Currency:</strong> Determines pricing and payment calculations</li>
+                        <li><strong>Branches:</strong> Can be added after customer creation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %}

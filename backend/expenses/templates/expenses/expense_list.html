@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Expenses - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Expenses</h1>
+            <p class="text-muted">Track and manage business expenses</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{% url 'expenses:category_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-tags"></i> Manage Categories
+            </a>
+            <a href="{% url 'expenses:expense_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Expense
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Amount</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in page_obj %}
+                        <tr>
+                            <td>{{ expense.name }}</td>
+                            <td>{{ expense.amount }} {{ expense.currency }}</td>
+                            <td>
+                                {% if expense.category %}
+                                <span class="badge bg-primary">{{ expense.category.name }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No Category</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ expense.status }}">{{ expense.get_status_display }}</span>
+                            </td>
+                            <td>{{ expense.date_incurred|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'expenses:expense_detail' expense.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                <a href="{% url 'expenses:expense_edit' expense.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">No expenses found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

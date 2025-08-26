@@ -16,4 +16,5 @@ urlpatterns = [
     path('get-branches/', views.get_branches, name='get_branches'),
     path('get-orders/', views.get_orders, name='get_orders'),
     path('get-defaults/', views.get_defaults, name='get_defaults'),
+    path('get-customer-pricing/', views.get_customer_pricing, name='get_customer_pricing'),
 ]

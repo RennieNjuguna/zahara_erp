@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if employee %}Edit Employee{% else %}Add Employee{% endif %} - Zahara ERP
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        {% if employee %}Edit Employee{% else %}Add New Employee{% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {% if employee %}
+                        Update employee information for {{ employee.first_name }} {{ employee.last_name }}
+                        {% else %}
+                        Create a new employee record
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'employees:employee_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Employees
+                </a>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- First Name -->
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">
+                                    First Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="first_name" 
+                                       name="first_name" 
+                                       value="{% if employee %}{{ employee.first_name }}{% endif %}"
+                                       placeholder="Enter first name"
+                                       required>
+                                <div class="form-text">
+                                    Employee's legal first name.
+                                </div>
+                            </div>
+
+                            <!-- Last Name -->
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">
+                                    Last Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="last_name" 
+                                       name="last_name" 
+                                       value="{% if employee %}{{ employee.last_name }}{% endif %}"
+                                       placeholder="Enter last name"
+                                       required>
+                                <div class="form-text">
+                                    Employee's legal last name.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Position -->
+                        <div class="mb-3">
+                            <label for="position" class="form-label">
+                                Position <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="position" 
+                                   name="position" 
+                                   value="{% if employee %}{{ employee.position }}{% endif %}"
+                                   placeholder="Enter job position (e.g., Sales Manager, Accountant, Driver)"
+                                   required>
+                            <div class="form-text">
+                                Employee's job title or position within the company.
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                Email Address <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   value="{% if employee %}{{ employee.email }}{% endif %}"
+                                   placeholder="Enter email address"
+                                   required>
+                            <div class="form-text">
+                                Employee's work email address (must be unique).
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label">
+                                Phone Number
+                            </label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="phone_number" 
+                                   name="phone_number" 
+                                   value="{% if employee %}{{ employee.phone_number }}{% endif %}"
+                                   placeholder="Enter phone number (optional)">
+                            <div class="form-text">
+                                Employee's contact phone number (optional).
+                            </div>
+                        </div>
+
+                        <!-- Date Joined -->
+                        <div class="mb-3">
+                            <label for="date_joined" class="form-label">
+                                Date Joined <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="date_joined" 
+                                   name="date_joined" 
+                                   value="{% if employee %}{{ employee.date_joined|date:'Y-m-d' }}{% endif %}"
+                                   required>
+                            <div class="form-text">
+                                Date when the employee started working at the company.
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center pt-3">
+                            <div>
+                                {% if employee %}
+                                <a href="{% url 'employees:employee_detail' employee.id %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                                {% else %}
+                                <a href="{% url 'employees:employee_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% if employee %}Update Employee{% else %}Create Employee{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle text-info"></i> Employee Management Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Personal Information:</strong> Use legal names as they appear on official documents.</li>
+                        <li><strong>Email Addresses:</strong> Each employee must have a unique email address.</li>
+                        <li><strong>Positions:</strong> Use consistent job titles for better organization.</li>
+                        <li><strong>Date Joined:</strong> This date is used to calculate years of service.</li>
+                        <li><strong>Phone Numbers:</strong> Optional but recommended for emergency contact.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

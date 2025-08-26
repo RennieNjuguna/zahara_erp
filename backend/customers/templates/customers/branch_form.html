@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if branch %}Edit Branch{% else %}Add Branch{% endif %} - Zahara ERP
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        {% if branch %}Edit Branch{% else %}Add New Branch{% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {% if branch %}
+                        Update branch information for {{ branch.customer.name }}
+                        {% else %}
+                        Add a new branch for {{ customer.name }}
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'customers:customer_detail' customer.id %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Customer
+                </a>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Branch Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Branch Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{% if branch %}{{ branch.name }}{% endif %}" 
+                                   required placeholder="Enter branch name">
+                            <div class="invalid-feedback">
+                                Please provide a branch name.
+                            </div>
+                        </div>
+
+                        <!-- Short Code -->
+                        <div class="mb-4">
+                            <label for="short_code" class="form-label">
+                                Short Code <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="short_code" name="short_code" 
+                                   value="{% if branch %}{{ branch.short_code }}{% endif %}" 
+                                   required placeholder="Enter short code (e.g., BR001)" 
+                                   maxlength="10">
+                            <div class="form-text">
+                                A unique identifier for the branch (max 10 characters)
+                            </div>
+                            <div class="invalid-feedback">
+                                Please provide a short code.
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'customers:customer_detail' customer.id %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if branch %}Update Branch{% else %}Create Branch{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle"></i> About Branch Management
+                    </h6>
+                    <ul class="mb-0">
+                        <li><strong>Branch Name:</strong> Descriptive name for the location</li>
+                        <li><strong>Short Code:</strong> Must be unique within the customer</li>
+                        <li><strong>Purpose:</strong> Organize customer locations and delivery points</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %}

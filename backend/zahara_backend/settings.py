@@ -45,11 +45,13 @@ INSTALLED_APPS = [
 
     # Your apps
     'customers',
-    'products',
+    'products.apps.ProductsConfig',
     'orders',
     'employees',
     'invoices.apps.InvoicesConfig',
+    'expenses.apps.ExpensesConfig',
     'payments',
+    'planting_schedule',
 ]
 
 MIDDLEWARE = [

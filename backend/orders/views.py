@@ -13,17 +13,37 @@ def order_list(request):
     customers = Customer.objects.all().order_by('name')
     customer_id = request.GET.get('customer')
     status = request.GET.get('status')
+    date_filter = request.GET.get('date')
 
     orders = Order.objects.all().order_by('-date')
     if customer_id:
         orders = orders.filter(customer_id=customer_id)
     if status:
         orders = orders.filter(status=status)
+    if date_filter:
+        orders = orders.filter(date=date_filter)
+
+    # Calculate summary statistics
+    total_orders = orders.count()
+    pending_orders = orders.filter(status='pending')
+    paid_orders = orders.filter(status='paid')
+    claim_orders = orders.filter(status='claim')
+
+    total_value = sum(order.total_amount for order in orders)
+    pending_value = sum(order.total_amount for order in pending_orders)
+    paid_value = sum(order.total_amount for order in paid_orders)
 
     return render(request, 'orders/order_list.html', {
         'orders': orders,
         'customers': customers,
         'filters': request.GET,
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
+        'paid_orders': paid_orders,
+        'claim_orders': claim_orders,
+        'total_value': total_value,
+        'pending_value': pending_value,
+        'paid_value': paid_value,
     })
 
 
@@ -92,6 +112,7 @@ def order_create(request):
     return render(request, 'orders/order_form.html', {
         'customers': customers,
         'products': products,
+        'default_currency': 'KES',  # Default currency
     })
 
 
@@ -147,6 +168,7 @@ def order_edit(request, order_id):
         'order': order,
         'customers': customers,
         'products': products,
+        'default_currency': order.currency or 'KES',  # Use order currency or default
     })
 
 
@@ -245,3 +267,57 @@ def get_defaults(request):
         'success': False,
         'error': 'Invalid request method'
     })
+
+
+def get_customer_pricing(request):
+    """Get customer pricing for a specific product and stem length"""
+    product_id = request.GET.get('product_id')
+    stem_length = request.GET.get('stem_length')
+
+    if not product_id or not stem_length:
+        return JsonResponse({
+            'success': False,
+            'error': 'Product ID and stem length are required'
+        })
+
+    try:
+        from products.models import CustomerProductPrice
+        from customers.models import Customer
+
+        # Validate inputs
+        try:
+            product_id = int(product_id)
+            stem_length = int(stem_length)
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid product ID or stem length format'
+            })
+
+        # Get all pricing data for this product and stem length
+        pricing_data = CustomerProductPrice.objects.filter(
+            product_id=product_id,
+            stem_length_cm=stem_length
+        ).select_related('customer', 'product').order_by('customer__name')
+
+        pricing_list = []
+        for price in pricing_data:
+            pricing_list.append({
+                'customer_name': price.customer.name,
+                'product_name': price.product.name,
+                'stem_length_cm': price.stem_length_cm,
+                'price_per_stem': str(price.price_per_stem),
+                'currency': price.customer.preferred_currency
+            })
+
+        return JsonResponse({
+            'success': True,
+            'pricing': pricing_list,
+            'count': len(pricing_list)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
