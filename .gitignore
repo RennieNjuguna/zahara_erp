@@ -11,6 +11,17 @@ venv/
 db.sqlite3
 staticfiles/
 
+# Media files (user uploads)
+media/
+media/*
+uploads/
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+
 # VS Code
 .vscode/
 
