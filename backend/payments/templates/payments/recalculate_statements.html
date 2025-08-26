@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Recalculate Statements | Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Recalculate All Statements
+                    </h2>
+                    <p class="text-muted mb-0">Fix missing payments in existing account statements</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'payments:account_statement_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Statements
+                    </a>
+                </div>
+            </div>
+
+            <!-- Warning Card -->
+            <div class="card border-warning mb-4">
+                <div class="card-header bg-warning bg-opacity-10 border-warning">
+                    <h5 class="card-title mb-0 text-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Important Notice
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>This action will recalculate all existing account statements</strong> to ensure they include all payments
+                        (including pending payments that were previously excluded).
+                    </p>
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle me-2"></i>What this will fix:</h6>
+                        <ul class="mb-0">
+                            <li>Missing payments in account statements</li>
+                            <li>Incorrect opening/closing balances</li>
+                            <li>Payment status filtering issues</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-exclamation-triangle me-2"></i>What this will do:</h6>
+                        <ul class="mb-0">
+                            <li>Recalculate {{ statement_count }} existing statements</li>
+                            <li>Update all balance calculations</li>
+                            <li>Include all active payments (completed, pending)</li>
+                            <li>Exclude cancelled/refunded payments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Card -->
+            <div class="card border-primary">
+                <div class="card-header bg-primary bg-opacity-10 border-primary">
+                    <h5 class="card-title mb-0 text-primary">
+                        <i class="bi bi-gear me-2"></i>Recalculation Action
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="mb-4">
+                        Click the button below to recalculate all account statements. This process may take a few moments
+                        depending on the number of statements.
+                    </p>
+
+                    <form method="post" onsubmit="return confirmRecalculation()">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Recalculate All Statements
+                        </button>
+                    </form>
+
+                    <small class="text-muted mt-3 d-block">
+                        This will update {{ statement_count }} statements with corrected payment data.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmRecalculation() {
+    return confirm(
+        'Are you sure you want to recalculate all {{ statement_count }} account statements?\n\n' +
+        'This will update all balance calculations and include any missing payments.\n\n' +
+        'This action cannot be undone.'
+    );
+}
+</script>
+
+<style>
+.card {
+    border-radius: 16px;
+    border: none;
+}
+
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}
+

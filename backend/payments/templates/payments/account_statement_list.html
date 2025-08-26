@@ -1,81 +1,438 @@
 {% extends "base.html" %}
-{% block title %}Account Statements{% endblock %}
+{% load static %}
+
+{% block title %}Account Statements | Zahara ERP{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h3 class="mb-0">Account Statements</h3>
-  <a class="btn btn-primary btn-sm" href="#" onclick="document.getElementById('gen-form').classList.toggle('d-none')">Generate</a>
-  <form id="csrf-form" style="display:none;">{% csrf_token %}</form>
-</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-file-earmark-text me-2"></i>Account Statements
+                    </h2>
+                    <p class="text-muted mb-0">Generate and view detailed financial statements for customers</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary btn-lg" onclick="toggleGenerateForm()">
+                        <i class="bi bi-plus-circle me-2"></i>Generate Statement
+                    </button>
+                    <a href="{% url 'payments:test_pdf_generation' %}" class="btn btn-warning btn-lg" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Test PDF
+                    </a>
+                    <a href="{% url 'payments:recalculate_all_statements' %}" class="btn btn-info btn-lg">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Fix Missing Payments
+                    </a>
+                    <a href="{% url 'payments:dashboard' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
 
-<div id="gen-form" class="card shadow-sm mb-3 d-none">
-  <div class="card-body">
-    <form method="post" action="" onsubmit="return false">
-      <div class="row g-2 align-items-end">
-        <div class="col-md-4">
-          <label class="form-label">Customer</label>
-          <select class="form-select" id="gf_customer">
-            {% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Statement Date</label>
-          <input type="date" class="form-control" id="gf_statement_date">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Start</label>
-          <input type="date" class="form-control" id="gf_start">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">End</label>
-          <input type="date" class="form-control" id="gf_end">
-        </div>
-        <div class="col-md-2 text-end">
-          <button class="btn btn-success" type="button" onclick="gen()">Generate</button>
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
+            <!-- Generate Statement Form -->
+            <div id="generate-form" class="card border-0 shadow-sm mb-4 d-none">
+                <div class="card-header bg-primary bg-opacity-10 border-0">
+                    <h5 class="card-title mb-0 text-primary">
+                        <i class="bi bi-gear me-2"></i>Generate New Statement
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="statement-form" method="post" action="" onsubmit="return false">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Customer</label>
+                                <select class="form-select" id="customer-select" required>
+                                    <option value="">Select Customer</option>
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold">Statement Date</label>
+                                <input type="date" class="form-control" id="statement-date" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold">Start Date</label>
+                                <input type="date" class="form-control" id="start-date" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold">End Date</label>
+                                <input type="date" class="form-control" id="end-date" required>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <button type="button" class="btn btn-success me-2" onclick="generateStatement()">
+                                    <i class="bi bi-check-circle me-2"></i>Generate
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleGenerateForm()">
+                                    <i class="bi bi-x-circle me-2"></i>Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-hover">
-        <thead><tr><th>Customer</th><th>Month</th><th>Opening</th><th>Closing</th><th>Total Orders</th><th>Total Credits</th><th>Total Payments</th><th></th></tr></thead>
-        <tbody>
-          {% for s in page_obj %}
-          <tr>
-            <td>{{ s.customer.name }}</td>
-            <td>{{ s.statement_date|date:'M Y' }}</td>
-            <td>{{ s.opening_balance }}</td>
-            <td>{{ s.closing_balance }}</td>
-            <td>{{ s.total_orders }}</td>
-            <td>{{ s.total_credits }}</td>
-            <td>{{ s.total_payments }}</td>
-            <td><a class="btn btn-sm btn-outline-primary" href="{% url 'payments:account_statement_detail' s.id %}">View</a></td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="8" class="text-muted">No statements</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            <!-- Filters and Search -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Customer</label>
+                            <select name="customer" class="form-select">
+                                <option value="">All Customers</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}" {% if filters.customer == customer.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ customer.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Year</label>
+                            <select name="year" class="form-select">
+                                <option value="">All Years</option>
+                                {% for year in years %}
+                                <option value="{{ year.year }}" {% if filters.year == year.year|stringformat:"s" %}selected{% endif %}>
+                                    {{ year.year }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Search</label>
+                            <input type="text" name="search" class="form-control" placeholder="Search customer names..."
+                                   value="{{ filters.search|default:'' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-2"></i>Filter
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{% url 'payments:account_statement_list' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-info bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-file-earmark-text text-info fs-4"></i>
+                            </div>
+                            <h5 class="card-title text-muted mb-1">Total Statements</h5>
+                            <h3 class="mb-0 fw-bold text-info">{{ page_obj.paginator.count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-people text-success fs-4"></i>
+                            </div>
+                            <h5 class="card-title text-muted mb-1">Active Customers</h5>
+                            <h3 class="mb-0 fw-bold text-success">{{ customers.count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-calendar-event text-warning fs-4"></i>
+                            </div>
+                            <h5 class="card-title text-muted mb-1">This Month</h5>
+                            <h3 class="mb-0 fw-bold text-warning">{{ this_month_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3 mx-auto mb-3" style="width: fit-content;">
+                                <i class="bi bi-download text-primary fs-4"></i>
+                            </div>
+                            <h5 class="card-title text-muted mb-1">PDF Ready</h5>
+                            <h3 class="mb-0 fw-bold text-primary">{{ pdf_ready_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statements Table -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table me-2"></i>Account Statements
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="border-0">Customer</th>
+                                        <th class="border-0">Period</th>
+                                        <th class="border-0">Opening Balance</th>
+                                        <th class="border-0">Closing Balance</th>
+                                        <th class="border-0">Orders</th>
+                                        <th class="border-0">Credits</th>
+                                        <th class="border-0">Payments</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for statement in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-person text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-semibold">{{ statement.customer.name }}</div>
+                                                    <small class="text-muted">{{ statement.customer.email|default:"No email" }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">{{ statement.statement_date|date:"M Y" }}</div>
+                                            <small class="text-muted">{{ statement.start_date|date:"M d" }} - {{ statement.end_date|date:"M d" }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold {% if statement.opening_balance > 0 %}text-danger{% elif statement.opening_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                                {{ statement.opening_balance|floatformat:2 }} {{ statement.customer.preferred_currency }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold {% if statement.closing_balance > 0 %}text-danger{% elif statement.closing_balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                                {{ statement.closing_balance|floatformat:2 }} {{ statement.customer.preferred_currency }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info">
+                                                {{ statement.total_orders|floatformat:2 }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">
+                                                {{ statement.total_credits|floatformat:2 }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                                {{ statement.total_payments|floatformat:2 }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if statement.pdf_file %}
+                                                <span class="badge bg-success">PDF Ready</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Draft</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'payments:account_statement_detail' statement.id %}"
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'payments:generate_account_statement_pdf' statement.id %}"
+                                                   class="btn btn-sm btn-outline-warning" title="Generate PDF">
+                                                    <i class="bi bi-file-earmark-pdf"></i>
+                                                </a>
+                                                {% if statement.pdf_file %}
+                                                <a href="{{ statement.pdf_file.url }}" target="_blank"
+                                                   class="btn btn-sm btn-outline-success" title="Download PDF">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <div class="card-footer bg-transparent border-0">
+                            <nav aria-label="Statements pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if filters.customer %}&customer={{ filters.customer }}{% endif %}{% if filters.year %}&year={{ filters.year }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">
+                                                <i class="bi bi-chevron-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filters.customer %}&customer={{ filters.customer }}{% endif %}{% if filters.year %}&year={{ filters.year }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if filters.customer %}&customer={{ filters.customer }}{% endif %}{% if filters.year %}&year={{ filters.year }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filters.customer %}&customer={{ filters.customer }}{% endif %}{% if filters.year %}&year={{ filters.year }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if filters.customer %}&customer={{ filters.customer }}{% endif %}{% if filters.year %}&year={{ filters.year }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">
+                                                <i class="bi bi-chevron-double-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <h5>No account statements found</h5>
+                                <p>Generate your first statement to get started</p>
+                                <button class="btn btn-primary" onclick="toggleGenerateForm()">
+                                    <i class="bi bi-plus-circle me-2"></i>Generate Statement
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
+
+<!-- CSRF Token -->
+<form id="csrf-form" style="display:none;">{% csrf_token %}</form>
 
 <script>
-function gen(){
-  const c = document.getElementById('gf_customer').value;
-  const sd = document.getElementById('gf_statement_date').value;
-  const st = document.getElementById('gf_start').value;
-  const en = document.getElementById('gf_end').value;
-  if(!c||!sd||!st||!en){ alert('Fill all fields'); return; }
-  const tokenEl = document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]');
-  const csrftoken = tokenEl ? tokenEl.value : '';
-  fetch(`/payments/statements/generate/${c}/`, { method:'POST', headers:{'X-CSRFToken':csrftoken}, body: new URLSearchParams({ statement_date: sd, start_date: st, end_date: en }) })
-    .then(r=>{ if(r.redirected){ location.href=r.url } else { return r.text().then(t=>{ alert('Generation complete or see detail.'); location.reload(); }) } })
+function toggleGenerateForm() {
+    const form = document.getElementById('generate-form');
+    form.classList.toggle('d-none');
+
+    if (!form.classList.contains('d-none')) {
+        // Set default dates
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        document.getElementById('statement-date').value = today.toISOString().split('T')[0];
+        document.getElementById('start-date').value = firstDay.toISOString().split('T')[0];
+        document.getElementById('end-date').value = lastDay.toISOString().split('T')[0];
+    }
+}
+
+function generateStatement() {
+    const customerId = document.getElementById('customer-select').value;
+    const statementDate = document.getElementById('statement-date').value;
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+
+    if (!customerId || !statementDate || !startDate || !endDate) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    const csrftoken = document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]').value;
+
+    fetch(`/payments/statements/generate/${customerId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            statement_date: statementDate,
+            start_date: startDate,
+            end_date: endDate
+        })
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else {
+            return response.text().then(text => {
+                alert('Statement generated successfully!');
+                location.reload();
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error generating statement. Please try again.');
+    });
 }
 </script>
+
+<style>
+.card {
+    border-radius: 16px;
+    border: none;
+}
+
+.table th {
+    font-weight: 600;
+    color: var(--text-primary);
+    border-top: none;
+    padding: 1rem;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+}
+
+.btn-group .btn {
+    border-radius: 8px;
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 0.125rem;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+</style>
 {% endblock %}
-
-

@@ -267,3 +267,57 @@ def get_defaults(request):
         'success': False,
         'error': 'Invalid request method'
     })
+
+
+def get_customer_pricing(request):
+    """Get customer pricing for a specific product and stem length"""
+    product_id = request.GET.get('product_id')
+    stem_length = request.GET.get('stem_length')
+
+    if not product_id or not stem_length:
+        return JsonResponse({
+            'success': False,
+            'error': 'Product ID and stem length are required'
+        })
+
+    try:
+        from products.models import CustomerProductPrice
+        from customers.models import Customer
+
+        # Validate inputs
+        try:
+            product_id = int(product_id)
+            stem_length = int(stem_length)
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid product ID or stem length format'
+            })
+
+        # Get all pricing data for this product and stem length
+        pricing_data = CustomerProductPrice.objects.filter(
+            product_id=product_id,
+            stem_length_cm=stem_length
+        ).select_related('customer', 'product').order_by('customer__name')
+
+        pricing_list = []
+        for price in pricing_data:
+            pricing_list.append({
+                'customer_name': price.customer.name,
+                'product_name': price.product.name,
+                'stem_length_cm': price.stem_length_cm,
+                'price_per_stem': str(price.price_per_stem),
+                'currency': price.customer.preferred_currency
+            })
+
+        return JsonResponse({
+            'success': True,
+            'pricing': pricing_list,
+            'count': len(pricing_list)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
