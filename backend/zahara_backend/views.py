@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from orders.models import Order
-from payments.models import Payment, Expense
+from payments.models import Payment
+from expenses.models import Expense
 from customers.models import Customer
 from products.models import Product
 
