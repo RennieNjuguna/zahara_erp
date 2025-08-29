@@ -353,6 +353,12 @@
           </a>
         </div>
         <div class="nav-item">
+          <a href="/graphs/" class="nav-link {% if 'graphs' in request.path %}active{% endif %}">
+            <i class="bi bi-bar-chart"></i>
+            Analytics
+          </a>
+        </div>
+        <div class="nav-item">
           <a href="/orders/" class="nav-link {% if 'orders' in request.path %}active{% endif %}">
             <i class="bi bi-file-earmark-text"></i>
             Orders
@@ -398,10 +404,10 @@
         <!-- New Features Box -->
         <div class="new-features-box">
           <h6>New features available!</h6>
-          <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">Check out the new dashboard view.</p>
+          <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">Check out the new Analytics dashboard with interactive charts.</p>
           <div style="display: flex; gap: 1rem;">
             <a href="#" onclick="dismissNewFeatures()">Dismiss</a>
-            <a href="#">What's new?</a>
+            <a href="/graphs/">View Analytics</a>
           </div>
         </div>
       </nav>

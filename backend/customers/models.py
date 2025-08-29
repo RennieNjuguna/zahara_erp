@@ -49,6 +49,27 @@ class Customer(models.Model):
             total_outstanding += order.outstanding_amount()
         return total_outstanding
 
+    def unallocated_payments(self):
+        """Calculate total unallocated payments for this customer"""
+        from payments.models import Payment
+        from payments.models import PaymentAllocation
+        
+        # Get all completed payments
+        total_payments = Payment.objects.filter(
+            customer=self,
+            status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Get total allocated amounts
+        total_allocated = PaymentAllocation.objects.filter(
+            payment__customer=self,
+            payment__status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Unallocated = payments - allocated
+        unallocated = total_payments - total_allocated
+        return max(0, unallocated)  # Can't be negative
+
 class Branch(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='branches')
     name = models.CharField(max_length=100)

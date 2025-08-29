@@ -23,7 +23,7 @@
             <a href="{% url 'customers:customer_edit' customer.id %}" class="btn btn-outline-secondary">
                 <i class="bi bi-pencil"></i> Edit
             </a>
-            <button type="button" class="btn btn-outline-danger" 
+            <button type="button" class="btn btn-outline-danger"
                     data-bs-toggle="modal" data-bs-target="#deleteModal">
                 <i class="bi bi-trash"></i> Delete
             </button>
@@ -70,18 +70,22 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label text-muted">Current Balance</label>
+                        <label class="form-label text-muted">Net Balance</label>
                         <p class="mb-0">
-                            <span class="{% if current_balance < 0 %}text-danger{% elif current_balance > 0 %}text-success{% else %}text-muted{% endif %} fw-bold fs-5">
-                                {{ customer.preferred_currency }} {{ current_balance|floatformat:2 }}
-                            </span>
-                        </p>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted">Outstanding Amount</label>
-                        <p class="mb-0">
-                            <span class="{% if outstanding_amount > 0 %}text-warning{% else %}text-success{% endif %} fw-bold fs-5">
-                                {{ customer.preferred_currency }} {{ outstanding_amount|floatformat:2 }}
+                            <span class="{% if current_balance > 0 %}text-danger{% elif current_balance < 0 %}text-success{% else %}text-muted{% endif %} fw-bold fs-5">
+                                {% if current_balance > 0 %}
+                                    <i class="bi bi-arrow-up-circle text-danger"></i>
+                                    {{ customer.preferred_currency }} {{ current_balance|floatformat:2 }}
+                                    <small class="d-block text-muted">Customer owes you</small>
+                                {% elif current_balance < 0 %}
+                                    <i class="bi bi-arrow-down-circle text-success"></i>
+                                    {{ customer.preferred_currency }} {{ current_balance|floatformat:2|slice:"1:" }}
+                                    <small class="d-block text-muted">You owe customer</small>
+                                {% else %}
+                                    <i class="bi bi-check-circle text-muted"></i>
+                                    {{ customer.preferred_currency }} 0.00
+                                    <small class="d-block text-muted">Accounts settled</small>
+                                {% endif %}
                             </span>
                         </p>
                     </div>
@@ -89,6 +93,34 @@
                         <label class="form-label text-muted">Total Sales</label>
                         <p class="mb-0 fw-medium">
                             {{ customer.preferred_currency }} {{ stats.total_sales|floatformat:2 }}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Total Payments Received</label>
+                        <p class="mb-0 fw-medium">
+                            {{ customer.preferred_currency }} {{ stats.total_payments|floatformat:2 }}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Unallocated Amount</label>
+                        <p class="mb-0">
+                            <span class="{% if unallocated_amount > 0 %}text-warning{% else %}text-success{% endif %} fw-bold fs-6">
+                                {% if unallocated_amount > 0 %}
+                                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                                    {{ customer.preferred_currency }} {{ unallocated_amount|floatformat:2 }}
+                                    <small class="d-block text-muted">Needs allocation</small>
+                                    <div class="mt-2">
+                                        <a href="{% url 'payments:payment_list' %}?customer={{ customer.id }}&status=completed" 
+                                           class="btn btn-warning btn-sm">
+                                            <i class="bi bi-arrow-left-right"></i> Allocate Payments
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <i class="bi bi-check-circle text-success"></i>
+                                    {{ customer.preferred_currency }} 0.00
+                                    <small class="d-block text-muted">All payments allocated</small>
+                                {% endif %}
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -129,6 +161,53 @@
         </div>
     </div>
 
+    <!-- Financial Overview Summary -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calculator"></i> Financial Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="border-end">
+                                <h4 class="{% if current_balance > 0 %}text-danger{% elif current_balance < 0 %}text-success{% else %}text-muted{% endif %} mb-1">
+                                    {{ customer.preferred_currency }} {{ current_balance|floatformat:2 }}
+                                </h4>
+                                <small class="text-muted">Net Balance</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-1">
+                                    {{ customer.preferred_currency }} {{ stats.total_sales|floatformat:2 }}
+                                </h4>
+                                <small class="text-muted">Total Sales</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="border-end">
+                                <h4 class="text-success mb-1">
+                                    {{ customer.preferred_currency }} {{ stats.total_payments|floatformat:2 }}
+                                </h4>
+                                <small class="text-muted">Total Payments</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <h4 class="{% if unallocated_amount > 0 %}text-warning{% else %}text-success{% endif %} mb-1">
+                                {{ customer.preferred_currency }} {{ unallocated_amount|floatformat:2 }}
+                            </h4>
+                            <small class="text-muted">Unallocated</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Branches Section -->
     <div class="row mt-4">
         <div class="col-12">
@@ -159,12 +238,12 @@
                                     <td><span class="badge bg-secondary">{{ branch.short_code }}</span></td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'customers:branch_edit' branch.id %}" 
+                                            <a href="{% url 'customers:branch_edit' branch.id %}"
                                                class="btn btn-outline-secondary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <button type="button" class="btn btn-outline-danger" 
-                                                    data-bs-toggle="modal" 
+                                            <button type="button" class="btn btn-outline-danger"
+                                                    data-bs-toggle="modal"
                                                     data-bs-target="#deleteBranchModal{{ branch.id }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>

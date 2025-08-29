@@ -12,11 +12,8 @@
     </div>
     <div class="col-md-4 text-end">
       <div class="view-buttons">
-        <a href="#" class="view-btn">
-          <i class="bi bi-bar-chart me-2"></i>Graphical View
-        </a>
-        <a href="#" class="view-btn">
-          <i class="bi bi-graph-up me-2"></i>Trends
+        <a href="{% url 'graphs' %}" class="view-btn">
+          <i class="bi bi-bar-chart me-2"></i>View Analytics
         </a>
       </div>
     </div>
@@ -49,9 +46,9 @@
 
   <div class="col-md-3 mb-3">
     <div class="metric-card">
-      <div class="metric-badge">{{ overdue_orders.count }} Overdue</div>
+      <div class="metric-badge">{{ overdue_orders.count }} Unpaid</div>
       <div class="metric-value">{{ overdue_amount|floatformat:2 }} KES</div>
-      <div class="metric-label">Overdue Orders</div>
+      <div class="metric-label">Unpaid Orders</div>
     </div>
   </div>
 
@@ -70,7 +67,7 @@
   <div class="col-md-8 mb-4">
     <div class="data-card">
       <h5 class="card-title">Recent Orders</h5>
-      <p class="card-subtitle">Last updated: {{ last_updated|date:"jS F Y, Hi" }}hrs</p>
+      <p class="card-subtitle">Recent orders from your database</p>
 
       <div class="table-responsive">
         {% if recent_orders %}
@@ -121,7 +118,7 @@
         <div class="transaction-item">
           <div>
             <div class="transaction-company">{{ transaction.company }}</div>
-            <div class="transaction-time">{{ transaction.time|date:"l g:iA" }}</div>
+            <div class="transaction-time">{{ transaction.time|date:"l" }} {{ transaction.time|time:"g:iA" }}</div>
           </div>
           <div class="transaction-amount {% if transaction.is_positive %}positive{% else %}negative{% endif %}">
             {% if transaction.is_positive %}+{% else %}-{% endif %} {{ transaction.amount|floatformat:2 }} {{ transaction.currency }}
@@ -191,6 +188,25 @@
 
 .text-center.py-4 i {
   opacity: 0.5;
+}
+
+/* Graph toggle button styles */
+.view-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: var(--accent-magenta);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.view-btn:hover {
+  background-color: #8b2d8b;
+  color: white;
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 45, 139, 0.3);
 }
 </style>
 {% endblock %}

@@ -97,14 +97,14 @@
 
             <!-- Financial Summary -->
             <div class="row g-4 mb-4">
-                <div class="col-md-4">
+  <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-success bg-opacity-10 border-0">
                             <h5 class="card-title mb-0 text-success">
                                 <i class="bi bi-cart-plus me-2"></i>Orders & Invoices
                             </h5>
                         </div>
-                        <div class="card-body">
+      <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="text-muted">Total Orders</span>
                                 <span class="fw-bold fs-5 text-success">{{ statement.total_orders|floatformat:2 }} {{ statement.customer.preferred_currency }}</span>
@@ -114,11 +114,11 @@
                             </div>
                             <div class="text-center">
                                 <small class="text-muted">New invoices during period</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
+      </div>
+    </div>
+  </div>
+          </div>
+          <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-warning bg-opacity-10 border-0">
                             <h5 class="card-title mb-0 text-warning">
@@ -138,8 +138,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
+          </div>
+          <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-info bg-opacity-10 border-0">
                             <h5 class="card-title mb-0 text-info">
@@ -323,11 +323,11 @@
                                 {{ statement.closing_balance|floatformat:2 }} {{ statement.customer.preferred_currency }}
                             </span>
                         </h4>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>

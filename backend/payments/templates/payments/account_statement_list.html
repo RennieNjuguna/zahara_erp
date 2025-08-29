@@ -29,7 +29,7 @@
                         <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
                     </a>
                 </div>
-            </div>
+</div>
 
             <!-- Generate Statement Form -->
             <div id="generate-form" class="card border-0 shadow-sm mb-4 d-none">
@@ -38,7 +38,7 @@
                         <i class="bi bi-gear me-2"></i>Generate New Statement
                     </h5>
                 </div>
-                <div class="card-body">
+  <div class="card-body">
                     <form id="statement-form" method="post" action="" onsubmit="return false">
                         <div class="row g-3 align-items-end">
                             <div class="col-md-3">
@@ -48,20 +48,20 @@
                                     {% for customer in customers %}
                                     <option value="{{ customer.id }}">{{ customer.name }}</option>
                                     {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-2">
+          </select>
+        </div>
+        <div class="col-md-2">
                                 <label class="form-label fw-semibold">Statement Date</label>
                                 <input type="date" class="form-control" id="statement-date" required>
-                            </div>
-                            <div class="col-md-2">
+        </div>
+        <div class="col-md-2">
                                 <label class="form-label fw-semibold">Start Date</label>
                                 <input type="date" class="form-control" id="start-date" required>
-                            </div>
-                            <div class="col-md-2">
+        </div>
+        <div class="col-md-2">
                                 <label class="form-label fw-semibold">End Date</label>
                                 <input type="date" class="form-control" id="end-date" required>
-                            </div>
+        </div>
                             <div class="col-md-3 text-end">
                                 <button type="button" class="btn btn-success me-2" onclick="generateStatement()">
                                     <i class="bi bi-check-circle me-2"></i>Generate
@@ -69,15 +69,15 @@
                                 <button type="button" class="btn btn-outline-secondary" onclick="toggleGenerateForm()">
                                     <i class="bi bi-x-circle me-2"></i>Cancel
                                 </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
 
             <!-- Filters and Search -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
+  <div class="card-body">
                     <form method="get" class="row g-3 align-items-end">
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Customer</label>
@@ -177,7 +177,7 @@
                 </div>
                 <div class="card-body p-0">
                     {% if page_obj %}
-                        <div class="table-responsive">
+    <div class="table-responsive">
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
@@ -192,7 +192,7 @@
                                         <th class="border-0">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+        <tbody>
                                     {% for statement in page_obj %}
                                     <tr>
                                         <td>
@@ -260,10 +260,10 @@
                                                 {% endif %}
                                             </div>
                                         </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
                         </div>
 
                         <!-- Pagination -->
@@ -326,8 +326,8 @@
                     {% endif %}
                 </div>
             </div>
-        </div>
     </div>
+  </div>
 </div>
 
 <!-- CSRF Token -->
