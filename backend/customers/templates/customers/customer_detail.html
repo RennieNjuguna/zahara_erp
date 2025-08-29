@@ -110,7 +110,7 @@
                                     {{ customer.preferred_currency }} {{ unallocated_amount|floatformat:2 }}
                                     <small class="d-block text-muted">Needs allocation</small>
                                     <div class="mt-2">
-                                        <a href="{% url 'payments:payment_list' %}?customer={{ customer.id }}&status=completed" 
+                                        <a href="{% url 'payments:payment_list' %}?customer={{ customer.id }}&status=completed"
                                            class="btn btn-warning btn-sm">
                                             <i class="bi bi-arrow-left-right"></i> Allocate Payments
                                         </a>
