@@ -285,6 +285,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Order #</th>
+                                    <th>Invoice #</th>
                                     <th>Date</th>
                                     <th>Status</th>
                                     <th>Total Amount</th>
@@ -299,6 +300,15 @@
                                         <a href="{% url 'orders:order_detail' order.id %}" class="text-decoration-none">
                                             #{{ order.id }}
                                         </a>
+                                    </td>
+                                    <td>
+                                        {% if order.invoice %}
+                                            <a href="{% url 'invoices:invoice_detail' order.invoice.invoice_code %}" class="text-decoration-none" title="View Invoice {{ order.invoice_code }}">
+                                                <span class="badge bg-primary text-white">{{ order.invoice_code }}</span>
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark" title="Invoice: {{ order.invoice_code }}">{{ order.invoice_code }}</span>
+                                        {% endif %}
                                     </td>
                                     <td>{{ order.date|date:"M d, Y" }}</td>
                                     <td>
