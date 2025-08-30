@@ -379,7 +379,7 @@ class AccountStatementAdmin(admin.ModelAdmin):
         }),
         ('Order Status Breakdown', {
             'fields': (
-                'total_pending_orders', 'total_paid_orders', 
+                'total_pending_orders', 'total_paid_orders',
                 'total_partial_orders', 'total_claim_orders'
             ),
             'classes': ('collapse',),

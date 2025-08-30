@@ -967,15 +967,15 @@ def generate_custom_statement(request):
             statement = form.save(commit=False)
             statement.statement_date = form.cleaned_data['end_date']
             statement.generated_by = request.user.username if request.user.is_authenticated else 'System'
-            
+
             # For full history, adjust start date to first order
             if statement.statement_type == 'full_history':
                 first_order = Order.objects.filter(customer=statement.customer).order_by('date').first()
                 if first_order:
                     statement.start_date = first_order.date
-            
+
             statement.save()
-            
+
             # Generate statement data
             try:
                 statement_data = statement.generate_statement_data()
@@ -986,7 +986,7 @@ def generate_custom_statement(request):
                 messages.error(request, f"Error generating statement: {str(e)}")
     else:
         form = CustomAccountStatementForm()
-    
+
     context = {
         'form': form,
         'title': 'Generate Custom Account Statement',
