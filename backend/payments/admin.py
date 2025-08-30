@@ -350,26 +350,40 @@ class CustomerBalanceAdmin(admin.ModelAdmin):
 @admin.register(AccountStatement)
 class AccountStatementAdmin(admin.ModelAdmin):
     list_display = [
-        'customer', 'statement_date', 'opening_balance', 'closing_balance',
+        'customer', 'statement_type', 'statement_date', 'opening_balance', 'closing_balance',
         'total_orders', 'total_payments', 'pdf_file_display'
     ]
-    list_filter = ['statement_date', 'created_at']
+    list_filter = ['statement_type', 'statement_date', 'created_at', 'include_payments', 'include_credits']
     search_fields = ['customer__name', 'generated_by']
     readonly_fields = [
         'created_at', 'opening_balance', 'closing_balance',
-        'total_orders', 'total_credits', 'total_payments'
+        'total_orders', 'total_credits', 'total_payments',
+        'total_pending_orders', 'total_paid_orders', 'total_partial_orders', 'total_claim_orders'
     ]
     date_hierarchy = 'statement_date'
 
     fieldsets = (
-        ('Customer & Period', {
-            'fields': ('customer', 'statement_date', 'start_date', 'end_date')
+        ('Statement Configuration', {
+            'fields': ('customer', 'statement_type', 'statement_date', 'start_date', 'end_date')
+        }),
+        ('Custom Options', {
+            'fields': ('include_payments', 'include_credits'),
+            'classes': ('collapse',),
+            'description': 'Choose whether to include payments and credits in custom statements'
         }),
         ('Statement Totals', {
             'fields': (
                 'opening_balance', 'closing_balance', 'total_orders',
                 'total_credits', 'total_payments'
             )
+        }),
+        ('Order Status Breakdown', {
+            'fields': (
+                'total_pending_orders', 'total_paid_orders', 
+                'total_partial_orders', 'total_claim_orders'
+            ),
+            'classes': ('collapse',),
+            'description': 'Breakdown of orders by status (for custom statements)'
         }),
         ('PDF & Metadata', {
             'fields': ('pdf_file', 'generated_by', 'created_at')

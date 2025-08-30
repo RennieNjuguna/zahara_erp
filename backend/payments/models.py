@@ -209,17 +209,36 @@ class CustomerBalance(models.Model):
 
 class AccountStatement(models.Model):
     """Dynamic account statements for customers"""
+    
+    # Statement Types
+    STATEMENT_TYPE_CHOICES = [
+        ('reconciliation', 'Reconciliation Statement'),
+        ('periodic', 'Periodic Statement'),
+        ('full_history', 'Full Account History'),
+    ]
+    
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='account_statements')
+    statement_type = models.CharField(max_length=20, choices=STATEMENT_TYPE_CHOICES, default='reconciliation')
     statement_date = models.DateField()
     start_date = models.DateField()
     end_date = models.DateField()
-
+    
+    # Custom Statement Options
+    include_payments = models.BooleanField(default=True, help_text="Include payments in the statement")
+    include_credits = models.BooleanField(default=True, help_text="Include credit notes in the statement")
+    
     # Statement totals
     opening_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     closing_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_orders = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_credits = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_payments = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Additional totals for custom statements
+    total_pending_orders = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_paid_orders = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_partial_orders = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_claim_orders = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
     # PDF file
     pdf_file = models.FileField(upload_to='account_statements_pdfs/', blank=True, null=True)
@@ -236,7 +255,19 @@ class AccountStatement(models.Model):
         return f"{self.customer.name} - {self.statement_date.strftime('%B %Y')}"
 
     def generate_statement_data(self):
-        """Generate statement data for the specified period"""
+        """Generate statement data based on statement type and options"""
+        
+        if self.statement_type == 'reconciliation':
+            return self._generate_reconciliation_statement()
+        elif self.statement_type == 'periodic':
+            return self._generate_periodic_statement()
+        elif self.statement_type == 'full_history':
+            return self._generate_full_history_statement()
+        else:
+            raise ValueError(f"Unknown statement type: {self.statement_type}")
+    
+    def _generate_reconciliation_statement(self):
+        """Generate full reconciliation statement (existing logic)"""
         # Get opening balance (balance before start_date)
         opening_balance = self._calculate_balance_before_date(self.start_date)
 
@@ -289,6 +320,191 @@ class AccountStatement(models.Model):
             'total_credits': total_credits,
             'total_payments': total_payments,
             'orders': orders_in_period,
+            'credits': credits_in_period,
+            'payments': payments_in_period,
+        }
+    
+    def _generate_periodic_statement(self):
+        """Generate periodic statement with optional payments/credits"""
+        # Get orders in period with status breakdown
+        orders_in_period = Order.objects.filter(
+            customer=self.customer,
+            date__gte=self.start_date,
+            date__lte=self.end_date
+        )
+        
+        # Calculate totals by status
+        total_orders = orders_in_period.aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_pending_orders = orders_in_period.filter(status='pending').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_paid_orders = orders_in_period.filter(status='paid').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_partial_orders = orders_in_period.filter(status='partial').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_claim_orders = orders_in_period.filter(status='claim').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        # Initialize totals
+        total_credits = Decimal('0.00')
+        total_payments = Decimal('0.00')
+        credits_in_period = None
+        payments_in_period = None
+        
+        # Include credits if requested
+        if self.include_credits:
+            credits_in_period = CreditNote.objects.filter(
+                order__customer=self.customer,
+                created_at__date__gte=self.start_date,
+                created_at__date__lte=self.end_date
+            )
+            total_credits = credits_in_period.aggregate(
+                total=Sum('credit_note_items__credit_amount')
+            )['total'] or Decimal('0.00')
+        
+        # Include payments if requested
+        if self.include_payments:
+            payments_in_period = Payment.objects.filter(
+                customer=self.customer,
+                payment_date__gte=self.start_date,
+                payment_date__lte=self.end_date
+            ).exclude(status__in=['cancelled', 'refunded'])
+            total_payments = payments_in_period.aggregate(
+                total=Sum('amount')
+            )['total'] or Decimal('0.00')
+        
+        # Calculate balances
+        opening_balance = self._calculate_balance_before_date(self.start_date)
+        closing_balance = opening_balance + total_orders - total_credits - total_payments
+        
+        # Update statement with proper rounding
+        self.opening_balance = Decimal(str(opening_balance)).quantize(Decimal('0.01'))
+        self.closing_balance = Decimal(str(closing_balance)).quantize(Decimal('0.01'))
+        self.total_orders = Decimal(str(total_orders)).quantize(Decimal('0.01'))
+        self.total_credits = Decimal(str(total_credits)).quantize(Decimal('0.01'))
+        self.total_payments = Decimal(str(total_payments)).quantize(Decimal('0.01'))
+        self.total_pending_orders = Decimal(str(total_pending_orders)).quantize(Decimal('0.01'))
+        self.total_paid_orders = Decimal(str(total_paid_orders)).quantize(Decimal('0.01'))
+        self.total_partial_orders = Decimal(str(total_partial_orders)).quantize(Decimal('0.01'))
+        self.total_claim_orders = Decimal(str(total_claim_orders)).quantize(Decimal('0.01'))
+        self.save()
+        
+        return {
+            'opening_balance': opening_balance,
+            'closing_balance': closing_balance,
+            'total_orders': total_orders,
+            'total_credits': total_credits,
+            'total_payments': total_payments,
+            'total_pending_orders': total_pending_orders,
+            'total_paid_orders': total_paid_orders,
+            'total_partial_orders': total_partial_orders,
+            'total_claim_orders': total_claim_orders,
+            'orders': orders_in_period,
+            'credits': credits_in_period,
+            'payments': payments_in_period,
+        }
+    
+    def _generate_full_history_statement(self):
+        """Generate full account history statement"""
+        # Get customer's first order date
+        first_order = Order.objects.filter(customer=self.customer).order_by('date').first()
+        if first_order:
+            start_date = first_order.date
+        else:
+            start_date = self.start_date
+        
+        # Get all orders since first order
+        all_orders = Order.objects.filter(
+            customer=self.customer,
+            date__gte=start_date,
+            date__lte=self.end_date
+        )
+        
+        # Calculate totals by status
+        total_orders = all_orders.aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_pending_orders = all_orders.filter(status='pending').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_paid_orders = all_orders.filter(status='paid').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_partial_orders = all_orders.filter(status='partial').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        total_claim_orders = all_orders.filter(status='claim').aggregate(
+            total=Sum('total_amount')
+        )['total'] or Decimal('0.00')
+        
+        # Initialize totals
+        total_credits = Decimal('0.00')
+        total_payments = Decimal('0.00')
+        credits_in_period = None
+        payments_in_period = None
+        
+        # Include credits if requested
+        if self.include_credits:
+            credits_in_period = CreditNote.objects.filter(
+                order__customer=self.customer,
+                created_at__date__gte=start_date,
+                created_at__date__lte=self.end_date
+            )
+            total_credits = credits_in_period.aggregate(
+                total=Sum('credit_note_items__credit_amount')
+            )['total'] or Decimal('0.00')
+        
+        # Include payments if requested
+        if self.include_payments:
+            payments_in_period = Payment.objects.filter(
+                customer=self.customer,
+                payment_date__gte=start_date,
+                payment_date__lte=self.end_date
+            ).exclude(status__in=['cancelled', 'refunded'])
+            total_payments = payments_in_period.aggregate(
+                total=Sum('amount')
+            )['total'] or Decimal('0.00')
+        
+        # Calculate balances
+        opening_balance = Decimal('0.00')  # Starting from zero for full history
+        closing_balance = opening_balance + total_orders - total_credits - total_payments
+        
+        # Update statement with proper rounding
+        self.opening_balance = Decimal(str(opening_balance)).quantize(Decimal('0.01'))
+        self.closing_balance = Decimal(str(closing_balance)).quantize(Decimal('0.01'))
+        self.total_orders = Decimal(str(total_orders)).quantize(Decimal('0.01'))
+        self.total_credits = Decimal(str(total_credits)).quantize(Decimal('0.01'))
+        self.total_payments = Decimal(str(total_payments)).quantize(Decimal('0.01'))
+        self.total_pending_orders = Decimal(str(total_pending_orders)).quantize(Decimal('0.01'))
+        self.total_paid_orders = Decimal(str(total_paid_orders)).quantize(Decimal('0.01'))
+        self.total_partial_orders = Decimal(str(total_partial_orders)).quantize(Decimal('0.01'))
+        self.total_claim_orders = Decimal(str(total_claim_orders)).quantize(Decimal('0.01'))
+        self.save()
+        
+        return {
+            'opening_balance': opening_balance,
+            'closing_balance': closing_balance,
+            'total_orders': total_orders,
+            'total_credits': total_credits,
+            'total_payments': total_payments,
+            'total_pending_orders': total_pending_orders,
+            'total_paid_orders': total_paid_orders,
+            'total_partial_orders': total_partial_orders,
+            'total_claim_orders': total_claim_orders,
+            'orders': all_orders,
             'credits': credits_in_period,
             'payments': payments_in_period,
         }

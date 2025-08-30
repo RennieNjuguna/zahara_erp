@@ -16,6 +16,9 @@
                     <p class="text-muted mb-0">Generate and view detailed financial statements for customers</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="{% url 'payments:generate_custom_statement' %}" class="btn btn-success btn-lg">
+                        <i class="bi bi-gear me-2"></i>Custom Statement
+                    </a>
                     <button class="btn btn-primary btn-lg" onclick="toggleGenerateForm()">
                         <i class="bi bi-plus-circle me-2"></i>Generate Statement
                     </button>
