@@ -430,7 +430,7 @@
             {% endif %}
 
             <!-- Credits -->
-            {% if statement_data.credits %}
+            {% if statement.include_credits and statement_data.credits %}
             <h4 style="color: #9A1D56; margin: 20px 0 15px 0; font-size: 16px;">Credits & Adjustments</h4>
             <table class="transaction-table">
                 <thead>
@@ -455,7 +455,7 @@
             {% endif %}
 
             <!-- Payments -->
-            {% if statement_data.payments %}
+            {% if statement.include_payments and statement_data.payments %}
             <h4 style="color: #9A1D56; margin: 20px 0 15px 0; font-size: 16px;">Payments Received</h4>
             <table class="transaction-table">
                 <thead>
@@ -496,18 +496,22 @@
                         +{{ statement.total_orders|floatformat:2 }}
                     </div>
                 </div>
+                {% if statement.include_credits %}
                 <div class="reconciliation-item">
                     <div class="reconciliation-label">- Credits</div>
                     <div class="reconciliation-amount">
                         -{{ statement.total_credits|floatformat:2 }}
                     </div>
                 </div>
+                {% endif %}
+                {% if statement.include_payments %}
                 <div class="reconciliation-item">
                     <div class="reconciliation-label">- Payments</div>
                     <div class="reconciliation-amount">
                         -{{ statement.total_payments|floatformat:2 }}
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <div class="final-balance">
