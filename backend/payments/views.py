@@ -976,11 +976,13 @@ def generate_custom_statement(request):
 
             statement.generated_by = request.user.username if request.user.is_authenticated else 'System'
 
-            # For full history, adjust start date to first order
+            # For full history, adjust dates to span from first order to today
             if statement.statement_type == 'full_history':
+                from datetime import datetime
                 first_order = Order.objects.filter(customer=statement.customer).order_by('date').first()
                 if first_order:
                     statement.start_date = first_order.date
+                    statement.end_date = datetime.now().date()  # Today's date
 
             statement.save()
 
