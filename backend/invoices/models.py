@@ -16,14 +16,7 @@ class Invoice(models.Model):
     def __str__(self):
         return self.invoice_code
 
-class AccountStatement(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    month = models.DateField(help_text="Set any date in the target month")
-    created_at = models.DateTimeField(auto_now_add=True, editable=False)
-    pdf_file = models.FileField(upload_to='account_statements_pdfs/', blank=True, null=True)
 
-    def __str__(self):
-        return f"{self.customer.name} - {self.month.strftime('%B %Y')}"
 
 class CreditNoteItem(models.Model):
     credit_note = models.ForeignKey('CreditNote', on_delete=models.CASCADE, related_name='credit_note_items')
