@@ -83,10 +83,11 @@ class CustomAccountStatementForm(forms.ModelForm):
             cleaned_data['include_payments'] = True
             cleaned_data['include_credits'] = True
 
-        if statement_type in ['periodic', 'full_history']:
-            if not include_payments and not include_credits:
-                raise forms.ValidationError(
-                    "For custom statements, you must include at least payments or credits"
-                )
+        # Allow no options selected for custom statements
+        # if statement_type in ['periodic', 'full_history']:
+        #     if not include_payments and not include_credits:
+        #         raise forms.ValidationError(
+        #             "For custom statements, you must include at least payments or credits"
+        #         )
 
         return cleaned_data

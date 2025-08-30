@@ -141,14 +141,16 @@
                                         </div>
                                     </div>
 
-                                    <!-- Option Description -->
-                                    <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
-                                        <small class="text-info">
-                                            <i class="bi bi-info-circle me-1"></i>
-                                            <strong>Note:</strong> You can select both options, one option, or neither option
-                                            depending on what you want to include in your custom statement.
-                                        </small>
-                                    </div>
+                                                                         <!-- Option Description -->
+                                     <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                                         <small class="text-info">
+                                             <i class="bi bi-info-circle me-1"></i>
+                                             <strong>Note:</strong> You can select both options, one option, or neither option 
+                                             depending on what you want to include in your custom statement. 
+                                             <strong>Selecting neither will create a statement with only orders.</strong>
+                                             <br><strong>Custom statements will use today's date as the statement date.</strong>
+                                         </small>
+                                     </div>
                                 </div>
                             </div>
                         </div>
@@ -299,21 +301,8 @@ document.addEventListener('DOMContentLoaded', function() {
         radio.addEventListener('change', toggleCustomOptions);
     });
 
-    // Add validation for custom options
-    document.getElementById('customStatementForm').addEventListener('submit', function(e) {
-        const selectedType = document.querySelector('input[name="statement_type"]:checked').value;
-
-        if (selectedType === 'periodic' || selectedType === 'full_history') {
-            const includePayments = document.getElementById('include_payments').checked;
-            const includeCredits = document.getElementById('include_credits').checked;
-
-            if (!includePayments && !includeCredits) {
-                e.preventDefault();
-                alert('For custom statements, you must select at least one option (payments or credits).');
-                return false;
-            }
-        }
-    });
+        // Custom statements can have no options selected
+    // No validation needed - allow flexibility
 });
 </script>
 {% endblock %}

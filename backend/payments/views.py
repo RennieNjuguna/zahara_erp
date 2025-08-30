@@ -965,7 +965,14 @@ def generate_custom_statement(request):
         if form.is_valid():
             # Create the statement
             statement = form.save(commit=False)
-            statement.statement_date = form.cleaned_data['end_date']
+            
+            # Make statement_date unique by using current timestamp for custom statements
+            if statement.statement_type in ['periodic', 'full_history']:
+                from datetime import datetime
+                statement.statement_date = datetime.now().date()
+            else:
+                statement.statement_date = form.cleaned_data['end_date']
+                
             statement.generated_by = request.user.username if request.user.is_authenticated else 'System'
 
             # For full history, adjust start date to first order
