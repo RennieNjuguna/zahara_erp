@@ -103,30 +103,51 @@
 
                         <!-- Custom Options (for periodic and full history) -->
                         <div id="customOptions" class="mb-4" style="display: none;">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-title">
+                            <div class="card border-primary border-opacity-25">
+                                <div class="card-header bg-primary bg-opacity-10 border-0">
+                                    <h6 class="card-title mb-0 text-primary">
                                         <i class="bi bi-sliders"></i> Custom Options
                                     </h6>
-                                    <div class="row">
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
                                         <div class="col-md-6">
-                                            <div class="form-check">
-                                                {{ form.include_payments }}
-                                                <label class="form-check-label" for="{{ form.include_payments.id_for_label }}">
+                                            <div class="form-check custom-checkbox">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="include_payments" name="include_payments" 
+                                                       value="on" checked>
+                                                <label class="form-check-label fw-semibold" for="include_payments">
+                                                    <i class="bi bi-credit-card text-success me-2"></i>
                                                     Include Payments
                                                 </label>
-                                                <div class="form-text">Show payment transactions in the statement</div>
+                                                <div class="form-text text-muted">
+                                                    Show payment transactions in the statement
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="form-check">
-                                                {{ form.include_credits }}
-                                                <label class="form-check-label" for="{{ form.include_credits.id_for_label }}">
+                                            <div class="form-check custom-checkbox">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="include_credits" name="include_credits" 
+                                                       value="on" checked>
+                                                <label class="form-check-label fw-semibold" for="include_credits">
+                                                    <i class="bi bi-receipt text-info me-2"></i>
                                                     Include Credits
                                                 </label>
-                                                <div class="form-text">Show credit note adjustments</div>
+                                                <div class="form-text text-muted">
+                                                    Show credit note adjustments
+                                                </div>
                                             </div>
                                         </div>
+                                    </div>
+                                    
+                                    <!-- Option Description -->
+                                    <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                                        <small class="text-info">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            <strong>Note:</strong> You can select both options, one option, or neither option 
+                                            depending on what you want to include in your custom statement.
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -200,26 +221,98 @@
     </div>
 </div>
 
+<style>
+.custom-checkbox .form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0.1em;
+    border: 2px solid #dee2e6;
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-checkbox .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    transform: scale(1.1);
+}
+
+.custom-checkbox .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+.custom-checkbox .form-check-label {
+    cursor: pointer;
+    padding-left: 0.5rem;
+}
+
+.custom-checkbox:hover .form-check-input {
+    border-color: #0d6efd;
+}
+
+/* Statement type radio buttons styling */
+.form-check-input[type="radio"] {
+    width: 1.2em;
+    height: 1.2em;
+    margin-top: 0.1em;
+}
+
+.form-check-input[type="radio"]:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Card hover effects */
+.card:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const statementTypeRadios = document.querySelectorAll('input[name="statement_type"]');
     const customOptions = document.getElementById('customOptions');
-
+    
     function toggleCustomOptions() {
         const selectedType = document.querySelector('input[name="statement_type"]:checked').value;
         if (selectedType === 'periodic' || selectedType === 'full_history') {
             customOptions.style.display = 'block';
+            // Enable both checkboxes for custom statements
+            document.getElementById('include_payments').disabled = false;
+            document.getElementById('include_credits').disabled = false;
         } else {
             customOptions.style.display = 'none';
+            // For reconciliation, both are always included
+            document.getElementById('include_payments').checked = true;
+            document.getElementById('include_credits').checked = true;
+            document.getElementById('include_payments').disabled = true;
+            document.getElementById('include_credits').disabled = true;
         }
     }
-
+    
     // Initial state
     toggleCustomOptions();
-
+    
     // Listen for changes
     statementTypeRadios.forEach(radio => {
         radio.addEventListener('change', toggleCustomOptions);
+    });
+    
+    // Add validation for custom options
+    document.getElementById('customStatementForm').addEventListener('submit', function(e) {
+        const selectedType = document.querySelector('input[name="statement_type"]:checked').value;
+        
+        if (selectedType === 'periodic' || selectedType === 'full_history') {
+            const includePayments = document.getElementById('include_payments').checked;
+            const includeCredits = document.getElementById('include_credits').checked;
+            
+            if (!includePayments && !includeCredits) {
+                e.preventDefault();
+                alert('For custom statements, you must select at least one option (payments or credits).');
+                return false;
+            }
+        }
     });
 });
 </script>
