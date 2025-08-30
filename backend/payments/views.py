@@ -966,20 +966,11 @@ def generate_custom_statement(request):
             # Create the statement
             statement = form.save(commit=False)
 
-            # Make statement_date unique by using current timestamp for custom statements
+            # Set statement date for custom statements
             if statement.statement_type in ['periodic', 'full_history']:
-                from datetime import datetime, timedelta
-                # Use current date and add a small offset to make it unique
-                base_date = datetime.now().date()
-                # Check how many statements of this type exist for this customer today
-                existing_count = AccountStatement.objects.filter(
-                    customer=statement.customer,
-                    statement_type=statement.statement_type,
-                    statement_date=base_date
-                ).count()
-                # Add the count as days to make each statement unique
-                unique_date = base_date + timedelta(days=existing_count)
-                statement.statement_date = unique_date
+                from datetime import datetime
+                # Use current date for custom statements
+                statement.statement_date = datetime.now().date()
             else:
                 statement.statement_date = form.cleaned_data['end_date']
 

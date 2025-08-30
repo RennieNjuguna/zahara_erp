@@ -248,8 +248,8 @@ class AccountStatement(models.Model):
     generated_by = models.CharField(max_length=100, blank=True)
 
     class Meta:
-        # Allow multiple statements per customer per date for different types
-        unique_together = ['customer', 'statement_date', 'statement_type']
+        # Allow multiple statements per customer per date for maximum flexibility
+        # unique_together = ['customer', 'statement_date', 'statement_type']  # Removed for flexibility
         ordering = ['-statement_date']
 
     def __str__(self):
