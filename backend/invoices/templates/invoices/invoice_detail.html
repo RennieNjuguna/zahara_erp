@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoice {{ invoice.invoice_code }} - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'customers:customer_detail' invoice.order.customer.id %}">{{ invoice.order.customer.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'orders:order_detail' invoice.order.id %}">Order #{{ invoice.order.id }}</a></li>
+                    <li class="breadcrumb-item active">Invoice {{ invoice.invoice_code }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0 mt-2">
+                <i class="bi bi-receipt text-primary"></i> Invoice {{ invoice.invoice_code }}
+            </h1>
+            <p class="text-muted mb-0">
+                Generated on {{ invoice.created_at|date:"M d, Y" }} at {{ invoice.created_at|time:"g:i A" }}
+            </p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{% url 'orders:order_detail' invoice.order.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Order
+            </a>
+            {% if invoice.pdf_file %}
+                <a href="{{ invoice.pdf_file.url }}" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-download"></i> Download PDF
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Invoice Information -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Invoice Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Invoice Code</label>
+                        <p class="mb-0 fw-bold fs-5">{{ invoice.invoice_code }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Order Number</label>
+                        <p class="mb-0">
+                            <a href="{% url 'orders:order_detail' invoice.order.id %}" class="text-decoration-none">
+                                #{{ invoice.order.id }}
+                            </a>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Customer</label>
+                        <p class="mb-0">
+                            <a href="{% url 'customers:customer_detail' invoice.order.customer.id %}" class="text-decoration-none">
+                                {{ invoice.order.customer.name }}
+                            </a>
+                        </p>
+                    </div>
+                    {% if invoice.order.branch %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Branch</label>
+                        <p class="mb-0">{{ invoice.order.branch.name }}</p>
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Order Date</label>
+                        <p class="mb-0">{{ invoice.order.date|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Status</label>
+                        <p class="mb-0">
+                            <span class="badge bg-{% if invoice.order.status == 'paid' %}success{% elif invoice.order.status == 'pending' %}warning{% elif invoice.order.status == 'claim' %}info{% else %}secondary{% endif %}">
+                                {{ invoice.order.status|title }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calculator"></i> Order Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Total Amount</label>
+                        <p class="mb-0 fw-bold fs-4 text-primary">
+                            {{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Outstanding Amount</label>
+                        <p class="mb-0">
+                            <span class="{% if invoice.order.outstanding_amount > 0 %}text-warning{% else %}text-success{% endif %} fw-bold">
+                                {{ invoice.order.currency }} {{ invoice.order.outstanding_amount|floatformat:2 }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Payment Status</label>
+                        <p class="mb-0">
+                            <span class="badge bg-{% if invoice.order.payment_status == 'paid' %}success{% elif invoice.order.payment_status == 'partial' %}warning{% else %}danger{% endif %}">
+                                {{ invoice.order.get_payment_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    {% if invoice.order.logistics_cost %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Logistics Cost</label>
+                        <p class="mb-0">{{ invoice.order.currency }} {{ invoice.order.logistics_cost|floatformat:2 }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Logistics Information -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-truck"></i> Logistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if invoice.order.logistics_provider %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Provider</label>
+                        <p class="mb-0">{{ invoice.order.logistics_provider }}</p>
+                    </div>
+                    {% endif %}
+                    {% if invoice.order.tracking_number %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Tracking Number</label>
+                        <p class="mb-0 fw-monospace">{{ invoice.order.tracking_number }}</p>
+                    </div>
+                    {% endif %}
+                    {% if invoice.order.delivery_status %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Delivery Status</label>
+                        <p class="mb-0">
+                            <span class="badge bg-info">{{ invoice.order.delivery_status|title }}</span>
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% if invoice.order.remarks %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Remarks</label>
+                        <p class="mb-0">{{ invoice.order.remarks }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Items -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-ul"></i> Order Items
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if invoice.order.items.all %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Stem Length</th>
+                                    <th>Stems</th>
+                                    <th>Price/Stem</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in invoice.order.items.all %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 32px; height: 32px;">
+                                                {{ item.product.name|first|upper }}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                <small class="text-muted">{{ item.product.category.name }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ item.stem_length }}cm</span>
+                                    </td>
+                                    <td>{{ item.stems }}</td>
+                                    <td>{{ invoice.order.currency }} {{ item.price_per_stem|floatformat:2 }}</td>
+                                    <td class="fw-bold">{{ invoice.order.currency }} {{ item.total_amount|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end fw-bold">Subtotal:</td>
+                                    <td class="fw-bold">{{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}</td>
+                                </tr>
+                                {% if invoice.order.logistics_cost %}
+                                <tr>
+                                    <td colspan="4" class="text-end">Logistics Cost:</td>
+                                    <td>{{ invoice.order.currency }} {{ invoice.order.logistics_cost|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="table-primary">
+                                    <td colspan="4" class="text-end fw-bold">Total:</td>
+                                    <td class="fw-bold fs-5">{{ invoice.order.currency }} {{ invoice.order.total_amount|floatformat:2 }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-exclamation-triangle display-4 text-muted"></i>
+                        <h5 class="mt-3">No order items found</h5>
+                        <p class="text-muted">This order doesn't have any items</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <div class="btn-group" role="group">
+                <a href="{% url 'orders:order_detail' invoice.order.id %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Order
+                </a>
+                <a href="{% url 'customers:customer_detail' invoice.order.customer.id %}" class="btn btn-outline-primary">
+                    <i class="bi bi-person"></i> View Customer
+                </a>
+                {% if invoice.pdf_file %}
+                <a href="{{ invoice.pdf_file.url }}" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-download"></i> Download PDF
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

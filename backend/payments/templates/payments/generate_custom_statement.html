@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate Custom Account Statement - Zahara ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'payments:dashboard' %}">Payments</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'payments:account_statement_list' %}">Account Statements</a></li>
+                    <li class="breadcrumb-item active">Generate Custom Statement</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0 mt-2">
+                <i class="bi bi-file-earmark-text text-primary"></i> {{ title }}
+            </h1>
+            <p class="text-muted mb-0">{{ subtitle }}</p>
+        </div>
+        <div class="btn-group" role="group">
+            <a href="{% url 'payments:account_statement_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Statements
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Statement Generation Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear"></i> Statement Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="customStatementForm">
+                        {% csrf_token %}
+
+                        <!-- Statement Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Statement Type</label>
+                            <div class="row">
+                                {% for choice in form.statement_type.field.choices %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="statement_type"
+                                               id="type_{{ choice.0 }}" value="{{ choice.0 }}"
+                                               {% if choice.0 == form.statement_type.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="type_{{ choice.0 }}">
+                                            <strong>{{ choice.1 }}</strong>
+                                            {% if choice.0 == 'reconciliation' %}
+                                                <br><small class="text-muted">Full detailed statement with all transactions</small>
+                                            {% elif choice.0 == 'periodic' %}
+                                                <br><small class="text-muted">Orders within specified date range</small>
+                                            {% elif choice.0 == 'full_history' %}
+                                                <br><small class="text-muted">All orders since customer's first order</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Customer Selection -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.customer.id_for_label }}" class="form-label">Customer</label>
+                                {{ form.customer }}
+                                {% if form.customer.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.customer.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                                                 <!-- Date Range -->
+                         <div id="dateRangeSection" class="row mb-3">
+                             <div class="col-md-6">
+                                 <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date</label>
+                                 {{ form.start_date }}
+                                 {% if form.start_date.errors %}
+                                     <div class="invalid-feedback d-block">
+                                         {{ form.start_date.errors.0 }}
+                                     </div>
+                                 {% endif %}
+                             </div>
+                             <div class="col-md-6">
+                                 <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
+                                 {{ form.end_date }}
+                                 {% if form.end_date.errors %}
+                                     <div class="invalid-feedback d-block">
+                                         {{ form.end_date.errors.0 }}
+                                     </div>
+                                 {% endif %}
+                             </div>
+                         </div>
+
+                        <!-- Custom Options (for periodic and full history) -->
+                        <div id="customOptions" class="mb-4" style="display: none;">
+                            <div class="card border-primary border-opacity-25">
+                                <div class="card-header bg-primary bg-opacity-10 border-0">
+                                    <h6 class="card-title mb-0 text-primary">
+                                        <i class="bi bi-sliders"></i> Custom Options
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="form-check custom-checkbox">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="include_payments" name="include_payments"
+                                                       value="on" checked>
+                                                <label class="form-check-label fw-semibold" for="include_payments">
+                                                    <i class="bi bi-credit-card text-success me-2"></i>
+                                                    Include Payments
+                                                </label>
+                                                <div class="form-text text-muted">
+                                                    Show payment transactions in the statement
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check custom-checkbox">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="include_credits" name="include_credits"
+                                                       value="on" checked>
+                                                <label class="form-check-label fw-semibold" for="include_credits">
+                                                    <i class="bi bi-receipt text-info me-2"></i>
+                                                    Include Credits
+                                                </label>
+                                                <div class="form-text text-muted">
+                                                    Show credit note adjustments
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                                                         <!-- Option Description -->
+                                     <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                                         <small class="text-info">
+                                             <i class="bi bi-info-circle me-1"></i>
+                                             <strong>Note:</strong> You can select both options, one option, or neither option
+                                             depending on what you want to include in your custom statement.
+                                             <strong>Selecting neither will create a statement with only orders.</strong>
+                                             <br><strong>Custom statements will use today's date and can be created multiple times.</strong>
+                                             <br><strong>Full Account History automatically spans from first order to today.</strong>
+                                         </small>
+                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-file-earmark-text"></i> Generate Statement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Information Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> Statement Types
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-primary">Reconciliation Statement</h6>
+                        <p class="small text-muted mb-2">
+                            Complete financial reconciliation including all orders, payments, and credits.
+                            Always includes payments and credits for accurate balance calculation.
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="text-success">Periodic Statement</h6>
+                        <p class="small text-muted mb-2">
+                            Focus on orders within a specific date range. Choose whether to include
+                            payments and credits. Ideal for monthly or quarterly reporting.
+                        </p>
+                    </div>
+
+                                         <div class="mb-3">
+                         <h6 class="text-info">Full Account History</h6>
+                         <p class="small text-muted mb-2">
+                             Complete order history since the customer's first order up to today. 
+                             Date range is automatically set from first order date to statement creation date.
+                             Perfect for long-term relationship analysis and comprehensive reporting.
+                         </p>
+                     </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'payments:account_statement_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-list"></i> View All Statements
+                        </a>
+                        <a href="{% url 'payments:dashboard' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-speedometer2"></i> Payments Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.custom-checkbox .form-check-input {
+    width: 1.5em;
+    height: 1.5em;
+    margin-top: 0.1em;
+    border: 2px solid #dee2e6;
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-checkbox .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    transform: scale(1.1);
+}
+
+.custom-checkbox .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+.custom-checkbox .form-check-label {
+    cursor: pointer;
+    padding-left: 0.5rem;
+}
+
+.custom-checkbox:hover .form-check-input {
+    border-color: #0d6efd;
+}
+
+/* Statement type radio buttons styling */
+.form-check-input[type="radio"] {
+    width: 1.2em;
+    height: 1.2em;
+    margin-top: 0.1em;
+}
+
+.form-check-input[type="radio"]:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Card hover effects */
+.card:hover {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statementTypeRadios = document.querySelectorAll('input[name="statement_type"]');
+    const customOptions = document.getElementById('customOptions');
+
+    function toggleCustomOptions() {
+        const selectedType = document.querySelector('input[name="statement_type"]:checked').value;
+        const dateRangeSection = document.getElementById('dateRangeSection');
+        
+        if (selectedType === 'periodic') {
+            customOptions.style.display = 'block';
+            dateRangeSection.style.display = 'block';
+            // Enable both checkboxes for custom statements
+            document.getElementById('include_payments').disabled = false;
+            document.getElementById('include_credits').disabled = false;
+        } else if (selectedType === 'full_history') {
+            customOptions.style.display = 'block';
+            dateRangeSection.style.display = 'none'; // Hide date range for full history
+            // Enable both checkboxes for custom statements
+            document.getElementById('include_payments').disabled = false;
+            document.getElementById('include_credits').disabled = false;
+        } else {
+            customOptions.style.display = 'none';
+            dateRangeSection.style.display = 'block';
+            // For reconciliation, both are always included
+            document.getElementById('include_payments').checked = true;
+            document.getElementById('include_credits').checked = true;
+            document.getElementById('include_payments').disabled = true;
+            document.getElementById('include_credits').disabled = true;
+        }
+    }
+
+    // Initial state
+    toggleCustomOptions();
+
+    // Listen for changes
+    statementTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleCustomOptions);
+    });
+
+        // Custom statements can have no options selected
+    // No validation needed - allow flexibility
+});
+</script>
+{% endblock %}

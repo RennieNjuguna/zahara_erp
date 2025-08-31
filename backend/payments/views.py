@@ -23,6 +23,7 @@ from .models import (
 from customers.models import Customer
 from orders.models import Order
 from invoices.models import CreditNote
+from .forms import CustomAccountStatementForm
 
 
 @login_required
@@ -955,3 +956,50 @@ def recalculate_all_statements(request):
         'statement_count': AccountStatement.objects.count(),
     }
     return render(request, 'payments/recalculate_statements.html', context)
+
+
+def generate_custom_statement(request):
+    """Generate custom account statements with different types and options"""
+    if request.method == 'POST':
+        form = CustomAccountStatementForm(request.POST)
+        if form.is_valid():
+            # Create the statement
+            statement = form.save(commit=False)
+
+            # Set statement date for custom statements
+            if statement.statement_type in ['periodic', 'full_history']:
+                from datetime import datetime
+                # Use current date for custom statements
+                statement.statement_date = datetime.now().date()
+            else:
+                statement.statement_date = form.cleaned_data['end_date']
+
+            statement.generated_by = request.user.username if request.user.is_authenticated else 'System'
+
+            # For full history, adjust dates to span from first order to today
+            if statement.statement_type == 'full_history':
+                from datetime import datetime
+                first_order = Order.objects.filter(customer=statement.customer).order_by('date').first()
+                if first_order:
+                    statement.start_date = first_order.date
+                    statement.end_date = datetime.now().date()  # Today's date
+
+            statement.save()
+
+            # Generate statement data
+            try:
+                statement_data = statement.generate_statement_data()
+                messages.success(request, f"Custom {statement.get_statement_type_display()} generated successfully!")
+                return redirect('payments:account_statement_detail', statement_id=statement.id)
+            except Exception as e:
+                statement.delete()
+                messages.error(request, f"Error generating statement: {str(e)}")
+    else:
+        form = CustomAccountStatementForm()
+
+    context = {
+        'form': form,
+        'title': 'Generate Custom Account Statement',
+        'subtitle': 'Create specialized statements for different business needs'
+    }
+    return render(request, 'payments/generate_custom_statement.html', context)

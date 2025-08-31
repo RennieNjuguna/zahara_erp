@@ -5,34 +5,36 @@ from django.core.paginator import Paginator
 from .models import Customer, Branch
 from orders.models import Order
 from payments.models import CustomerBalance
+from payments.models import Payment
+from django.db.models import Sum
 
 
 def customer_list(request):
     """Display list of all customers with search and pagination"""
     search_query = request.GET.get('search', '')
     currency_filter = request.GET.get('currency', '')
-    
+
     customers = Customer.objects.all().order_by('name')
-    
+
     # Apply search filter
     if search_query:
         customers = customers.filter(
             Q(name__icontains=search_query) |
             Q(short_code__icontains=search_query)
         )
-    
+
     # Apply currency filter
     if currency_filter:
         customers = customers.filter(preferred_currency=currency_filter)
-    
+
     # Pagination
     paginator = Paginator(customers, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     # Get currency choices for filter
     currency_choices = Customer.CURRENCY_CHOICES
-    
+
     context = {
         'page_obj': page_obj,
         'search_query': search_query,
@@ -46,32 +48,41 @@ def customer_list(request):
 def customer_detail(request, customer_id):
     """Display detailed information about a specific customer"""
     customer = get_object_or_404(Customer, id=customer_id)
-    
+
     # Get customer statistics
     stats = customer.get_order_statistics()
-    
+
     # Get recent orders
     recent_orders = customer.orders.all().order_by('-date')[:10]
-    
-    # Get customer balance
+
+    # Get customer balance (this is our single source of truth)
     try:
         balance = CustomerBalance.objects.get(customer=customer)
         current_balance = balance.current_balance
     except CustomerBalance.DoesNotExist:
         current_balance = 0
-    
-    # Get outstanding amount
-    outstanding = customer.outstanding_amount()
-    
+
+    # Calculate total payments received
+    total_payments = Payment.objects.filter(
+        customer=customer,
+        status='completed'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    # Add total payments to stats
+    stats['total_payments'] = total_payments
+
+    # Calculate unallocated amount
+    unallocated_amount = customer.unallocated_payments()
+
     # Get branches
     branches = customer.branches.all()
-    
+
     context = {
         'customer': customer,
         'stats': stats,
         'recent_orders': recent_orders,
         'current_balance': current_balance,
-        'outstanding_amount': outstanding,
+        'unallocated_amount': unallocated_amount,
         'branches': branches,
     }
     return render(request, 'customers/customer_detail.html', context)
@@ -83,7 +94,7 @@ def customer_create(request):
         name = request.POST.get('name')
         short_code = request.POST.get('short_code')
         preferred_currency = request.POST.get('preferred_currency')
-        
+
         if name and short_code and preferred_currency:
             try:
                 customer = Customer.objects.create(
@@ -97,7 +108,7 @@ def customer_create(request):
                 messages.error(request, f'Error creating customer: {str(e)}')
         else:
             messages.error(request, 'All fields are required.')
-    
+
     context = {
         'currency_choices': Customer.CURRENCY_CHOICES,
     }
@@ -107,12 +118,12 @@ def customer_create(request):
 def customer_edit(request, customer_id):
     """Edit an existing customer"""
     customer = get_object_or_404(Customer, id=customer_id)
-    
+
     if request.method == 'POST':
         name = request.POST.get('name')
         short_code = request.POST.get('short_code')
         preferred_currency = request.POST.get('preferred_currency')
-        
+
         if name and short_code and preferred_currency:
             try:
                 customer.name = name
@@ -125,7 +136,7 @@ def customer_edit(request, customer_id):
                 messages.error(request, f'Error updating customer: {str(e)}')
         else:
             messages.error(request, 'All fields are required.')
-    
+
     context = {
         'customer': customer,
         'currency_choices': Customer.CURRENCY_CHOICES,
@@ -136,7 +147,7 @@ def customer_edit(request, customer_id):
 def customer_delete(request, customer_id):
     """Delete a customer"""
     customer = get_object_or_404(Customer, id=customer_id)
-    
+
     if request.method == 'POST':
         try:
             customer_name = customer.name
@@ -145,7 +156,7 @@ def customer_delete(request, customer_id):
             return redirect('customers:customer_list')
         except Exception as e:
             messages.error(request, f'Error deleting customer: {str(e)}')
-    
+
     context = {
         'customer': customer,
     }
@@ -155,11 +166,11 @@ def customer_delete(request, customer_id):
 def branch_create(request, customer_id):
     """Create a new branch for a customer"""
     customer = get_object_or_404(Customer, id=customer_id)
-    
+
     if request.method == 'POST':
         name = request.POST.get('name')
         short_code = request.POST.get('short_code')
-        
+
         if name and short_code:
             try:
                 branch = Branch.objects.create(
@@ -173,7 +184,7 @@ def branch_create(request, customer_id):
                 messages.error(request, f'Error creating branch: {str(e)}')
         else:
             messages.error(request, 'All fields are required.')
-    
+
     context = {
         'customer': customer,
     }
@@ -183,11 +194,11 @@ def branch_create(request, customer_id):
 def branch_edit(request, branch_id):
     """Edit an existing branch"""
     branch = get_object_or_404(Branch, id=branch_id)
-    
+
     if request.method == 'POST':
         name = request.POST.get('name')
         short_code = request.POST.get('short_code')
-        
+
         if name and short_code:
             try:
                 branch.name = name
@@ -199,7 +210,7 @@ def branch_edit(request, branch_id):
                 messages.error(request, f'Error updating branch: {str(e)}')
         else:
             messages.error(request, 'All fields are required.')
-    
+
     context = {
         'branch': branch,
     }
@@ -210,7 +221,7 @@ def branch_delete(request, branch_id):
     """Delete a branch"""
     branch = get_object_or_404(Branch, id=branch_id)
     customer_id = branch.customer.id
-    
+
     if request.method == 'POST':
         try:
             branch_name = branch.name
@@ -219,7 +230,7 @@ def branch_delete(request, branch_id):
             return redirect('customers:customer_detail', customer_id=customer_id)
         except Exception as e:
             messages.error(request, f'Error deleting branch: {str(e)}')
-    
+
     context = {
         'branch': branch,
     }
@@ -232,7 +243,7 @@ def quick_branch_create(request):
         customer_id = request.POST.get('customer_id')
         name = request.POST.get('name')
         short_code = request.POST.get('short_code')
-        
+
         if customer_id and name and short_code:
             try:
                 customer = Customer.objects.get(id=customer_id)
@@ -249,5 +260,5 @@ def quick_branch_create(request):
                 messages.error(request, f'Error creating branch: {str(e)}')
         else:
             messages.error(request, 'All fields are required.')
-    
+
     return redirect('customers:customer_list')

@@ -14,7 +14,7 @@
             <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Add Customer
             </a>
-            <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" 
+            <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split"
                     data-bs-toggle="dropdown" aria-expanded="false">
                 <span class="visually-hidden">Toggle Dropdown</span>
             </button>
@@ -36,7 +36,7 @@
             <form method="get" class="row g-3">
                 <div class="col-md-6">
                     <label for="search" class="form-label">Search Customers</label>
-                    <input type="text" class="form-control" id="search" name="search" 
+                    <input type="text" class="form-control" id="search" name="search"
                            value="{{ search_query }}" placeholder="Search by name or short code...">
                 </div>
                 <div class="col-md-3">
@@ -88,8 +88,8 @@
                             <th>Short Code</th>
                             <th>Currency</th>
                             <th>Total Orders</th>
-                            <th>Current Balance</th>
-                            <th>Outstanding</th>
+                            <th>Net Balance</th>
+                            <th>Unallocated</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -126,37 +126,61 @@
                             </td>
                             <td>
                                 {% with balance=customer.current_balance %}
-                                <span class="{% if balance < 0 %}text-danger{% elif balance > 0 %}text-success{% else %}text-muted{% endif %}">
-                                    {{ customer.preferred_currency }} {{ balance|floatformat:2 }}
+                                <span class="{% if balance > 0 %}text-danger{% elif balance < 0 %}text-success{% else %}text-muted{% endif %}">
+                                    {% if balance > 0 %}
+                                        <i class="bi bi-arrow-up-circle text-danger"></i>
+                                        {{ customer.preferred_currency }} {{ balance|floatformat:2 }}
+                                        <small class="d-block text-muted">Owed to you</small>
+                                    {% elif balance < 0 %}
+                                        <i class="bi bi-arrow-down-circle text-success"></i>
+                                        {{ customer.preferred_currency }} {{ balance|slice:"1:"|floatformat:2 }}
+                                        <small class="d-block text-muted">You owe</small>
+                                    {% else %}
+                                        <i class="bi bi-check-circle text-muted"></i>
+                                        {{ customer.preferred_currency }} 0.00
+                                        <small class="d-block text-muted">Settled</small>
+                                    {% endif %}
                                 </span>
                                 {% endwith %}
                             </td>
                             <td>
-                                {% with outstanding=customer.outstanding_amount %}
-                                <span class="{% if outstanding > 0 %}text-warning{% else %}text-success{% endif %}">
-                                    {{ customer.preferred_currency }} {{ outstanding|floatformat:2 }}
+                                {% with unallocated_payments=customer.unallocated_payments %}
+                                <span class="{% if unallocated_payments > 0 %}text-warning{% elif unallocated_payments < 0 %}text-info{% else %}text-muted{% endif %}">
+                                    {% if unallocated_payments > 0 %}
+                                        <i class="bi bi-exclamation-triangle text-warning"></i>
+                                        {{ customer.preferred_currency }} {{ unallocated_payments|floatformat:2 }}
+                                        <small class="d-block text-muted">Unallocated Payments</small>
+                                    {% elif unallocated_payments < 0 %}
+                                        <i class="bi bi-info-circle text-info"></i>
+                                        {{ customer.preferred_currency }} {{ unallocated_payments|slice:"1:"|floatformat:2 }}
+                                        <small class="d-block text-muted">Unallocated Receipts</small>
+                                    {% else %}
+                                        <i class="bi bi-check-circle text-muted"></i>
+                                        {{ customer.preferred_currency }} 0.00
+                                        <small class="d-block text-muted">All Allocated</small>
+                                    {% endif %}
                                 </span>
                                 {% endwith %}
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a href="{% url 'customers:customer_detail' customer.id %}" 
-                                       class="btn btn-sm btn-outline-primary" 
+                                    <a href="{% url 'customers:customer_detail' customer.id %}"
+                                       class="btn btn-sm btn-outline-primary"
                                        title="View Customer">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{% url 'customers:customer_edit' customer.id %}" 
+                                    <a href="{% url 'customers:customer_edit' customer.id %}"
                                        class="btn btn-sm btn-outline-secondary"
                                        title="Edit Customer">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <a href="{% url 'customers:branch_create' customer.id %}" 
+                                    <a href="{% url 'customers:branch_create' customer.id %}"
                                        class="btn btn-sm btn-outline-success"
                                        title="Quick Add Branch">
                                         <i class="bi bi-building-add"></i>
                                     </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            data-bs-toggle="modal" 
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="modal"
                                             data-bs-target="#deleteModal{{ customer.id }}"
                                             title="Delete Customer">
                                         <i class="bi bi-trash"></i>
@@ -174,7 +198,7 @@
                 <h4 class="mt-3">No customers found</h4>
                 <p class="text-muted">
                     {% if search_query or currency_filter %}
-                    Try adjusting your search criteria or 
+                    Try adjusting your search criteria or
                     <a href="{% url 'customers:customer_list' %}">clear all filters</a>.
                     {% else %}
                     Get started by adding your first customer.

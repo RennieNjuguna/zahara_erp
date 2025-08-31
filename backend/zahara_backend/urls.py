@@ -18,10 +18,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from . import views
+from .views import home, graphs
 
 urlpatterns = [
-    path('', views.home, name='home'),
+    path('', home, name='home'),
+    path('graphs/', graphs, name='graphs'),
     path('admin/', admin.site.urls),
     path('orders/', include('orders.urls')),
     path('payments/', include('payments.urls')),
@@ -30,6 +31,7 @@ urlpatterns = [
     path('employees/', include('employees.urls')),
     path('expenses/', include('expenses.urls')),
     path('planting/', include('planting_schedule.urls')),
+    path('invoices/', include('invoices.urls')),
 ]
 
 if settings.DEBUG:

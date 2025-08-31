@@ -97,14 +97,14 @@
 
             <!-- Financial Summary -->
             <div class="row g-4 mb-4">
-                <div class="col-md-4">
+  <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-success bg-opacity-10 border-0">
                             <h5 class="card-title mb-0 text-success">
                                 <i class="bi bi-cart-plus me-2"></i>Orders & Invoices
                             </h5>
                         </div>
-                        <div class="card-body">
+      <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="text-muted">Total Orders</span>
                                 <span class="fw-bold fs-5 text-success">{{ statement.total_orders|floatformat:2 }} {{ statement.customer.preferred_currency }}</span>
@@ -114,11 +114,12 @@
                             </div>
                             <div class="text-center">
                                 <small class="text-muted">New invoices during period</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
+      </div>
+    </div>
+  </div>
+          </div>
+          {% if statement.include_credits %}
+          <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-warning bg-opacity-10 border-0">
                             <h5 class="card-title mb-0 text-warning">
@@ -138,8 +139,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
+          </div>
+          {% endif %}
+          {% if statement.include_payments %}
+          <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-info bg-opacity-10 border-0">
                             <h5 class="card-title mb-0 text-info">
@@ -160,6 +163,7 @@
                         </div>
                     </div>
                 </div>
+          {% endif %}
             </div>
 
             <!-- Transaction Details -->
@@ -202,6 +206,7 @@
                     </div>
                 </div>
 
+                {% if statement.include_credits %}
                 <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-transparent border-0">
@@ -239,7 +244,9 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
 
+                {% if statement.include_payments %}
                 <div class="col-md-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-transparent border-0">
@@ -277,6 +284,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <!-- Balance Reconciliation -->
@@ -288,7 +296,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-md-{% if statement.include_credits and statement.include_payments %}2{% elif statement.include_credits or statement.include_payments %}3{% else %}4{% endif %}">
                             <div class="text-center p-3 bg-light rounded">
                                 <h6 class="text-muted mb-1">Opening Balance</h6>
                                 <h5 class="mb-0 {% if statement.opening_balance > 0 %}text-danger{% elif statement.opening_balance < 0 %}text-success{% else %}text-muted{% endif %}">
@@ -296,24 +304,28 @@
                                 </h5>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-{% if statement.include_credits and statement.include_payments %}2{% elif statement.include_credits or statement.include_payments %}3{% else %}4{% endif %}">
                             <div class="text-center p-3 bg-light rounded">
                                 <h6 class="text-muted mb-1">+ Orders</h6>
                                 <h5 class="mb-0 text-success">+{{ statement.total_orders|floatformat:2 }}</h5>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        {% if statement.include_credits %}
+                        <div class="col-md-{% if statement.include_payments %}2{% else %}4{% endif %}">
                             <div class="text-center p-3 bg-light rounded">
                                 <h6 class="text-muted mb-1">- Credits</h6>
                                 <h5 class="mb-0 text-warning">-{{ statement.total_credits|floatformat:2 }}</h5>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        {% endif %}
+                        {% if statement.include_payments %}
+                        <div class="col-md-{% if statement.include_credits %}2{% else %}4{% endif %}">
                             <div class="text-center p-3 bg-light rounded">
                                 <h6 class="text-muted mb-1">- Payments</h6>
                                 <h5 class="mb-0 text-info">-{{ statement.total_payments|floatformat:2 }}</h5>
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                     <hr>
                     <div class="text-center">
@@ -323,11 +335,11 @@
                                 {{ statement.closing_balance|floatformat:2 }} {{ statement.customer.preferred_currency }}
                             </span>
                         </h4>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
