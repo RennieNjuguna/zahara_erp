@@ -24,6 +24,11 @@ urlpatterns = [
     path('', home, name='home'),
     path('graphs/', graphs, name='graphs'),
     path('admin/', admin.site.urls),
+
+    # API endpoints
+    path('api/v1/', include('api.urls')),
+
+    # Existing app URLs
     path('orders/', include('orders.urls')),
     path('payments/', include('payments.urls')),
     path('customers/', include('customers.urls')),

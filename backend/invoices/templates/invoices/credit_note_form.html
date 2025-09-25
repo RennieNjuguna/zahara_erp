@@ -1,0 +1,726 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Zahara ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .form-section-card {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    border: 1px solid #F0F0F0;
+  }
+
+  .form-section-card h5 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #F0F0F0;
+  }
+
+  .form-section-card h5 i {
+    color: var(--accent-magenta);
+    font-size: 1.2rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .form-control, .form-select {
+    border: 2px solid #E0E0E0;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    width: 100%;
+    background-color: white;
+  }
+
+  .form-control:focus, .form-select:focus {
+    border-color: var(--accent-magenta);
+    box-shadow: 0 0 0 0.2rem rgba(139, 0, 139, 0.15);
+    outline: none;
+    background-color: white;
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+  }
+
+  .help-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
+
+  .order-preview-card {
+    background-color: #F8F9FA;
+    border: 1px solid #E9ECEF;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    display: none;
+  }
+
+  .order-preview-card.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .order-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .order-detail-item {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid #E9ECEF;
+  }
+
+  .order-detail-label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+  }
+
+  .order-detail-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .order-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+
+  .order-items-table th,
+  .order-items-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #E9ECEF;
+  }
+
+  .order-items-table th {
+    background-color: #F8F9FA;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .credit-input {
+    width: 80px;
+    text-align: center;
+    border: 1px solid #E0E0E0;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+  }
+
+  .credit-input:focus {
+    border-color: var(--accent-magenta);
+    outline: none;
+  }
+
+  .credit-amount {
+    font-weight: 600;
+    color: var(--accent-magenta);
+  }
+
+  .total-credit-section {
+    background-color: var(--accent-magenta);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .total-credit-section h6 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .total-credit-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .btn {
+    padding: 0.875rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 140px;
+    justify-content: center;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-magenta), var(--sidebar-hover));
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--sidebar-hover), var(--accent-magenta));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(139, 0, 139, 0.3);
+    color: white;
+    text-decoration: none;
+  }
+
+  .btn-outline-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 2px solid #E0E0E0;
+  }
+
+  .btn-outline-secondary:hover {
+    background: #F8F9FA;
+    color: var(--text-primary);
+    border-color: #D0D0D0;
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  .loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .alert {
+    border-radius: 0.75rem;
+    border: none;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .alert-success {
+    background-color: #D4EDDA;
+    color: #155724;
+    border-left: 4px solid #28A745;
+  }
+
+  .alert-danger {
+    background-color: #F8D7DA;
+    color: #721C24;
+    border-left: 4px solid #DC3545;
+  }
+
+  .alert-info {
+    background-color: #D1ECF1;
+    color: #0C5460;
+    border-left: 4px solid #17A2B8;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-pending {
+    background-color: #FFF3CD;
+    color: #856404;
+  }
+
+  .status-paid {
+    background-color: #D1ECF1;
+    color: #0C5460;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+  <!-- Page Header -->
+  <div class="dashboard-header">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h1>{{ title }}</h1>
+        <p>Create a new credit note by selecting customer, order, and items to credit</p>
+      </div>
+      <div class="col-md-4 text-end">
+        <div class="view-buttons">
+          <a href="{% url 'invoices:credit_note_list' %}" class="view-btn">
+            <i class="bi bi-arrow-left me-2"></i>Back to List
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Credit Note Form -->
+  <form method="post" id="creditNoteForm">
+    {% csrf_token %}
+
+    <!-- Hidden fields for credit amounts and stems -->
+    <div id="hiddenCreditFields" style="display: none;">
+      <!-- These will be populated by JavaScript -->
+    </div>
+
+    <!-- Customer and Order Selection Section -->
+    <div class="form-section-card">
+      <h5><i class="bi bi-search"></i> Select Customer & Order</h5>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="{{ form.customer.id_for_label }}" class="form-label">
+              Customer <span class="text-danger">*</span>
+            </label>
+            {{ form.customer }}
+            <div class="help-text">Select the customer to see their orders</div>
+            {% if form.customer.errors %}
+              <div class="text-danger mt-1">{{ form.customer.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="{{ form.order.id_for_label }}" class="form-label">
+              Order <span class="text-danger">*</span>
+            </label>
+            {{ form.order }}
+            <div class="help-text">Select the order to create credit note for</div>
+            {% if form.order.errors %}
+              <div class="text-danger mt-1">{{ form.order.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Information Preview -->
+    <div class="order-preview-card" id="orderPreview">
+      <h6><i class="bi bi-info-circle"></i> Selected Order Information</h6>
+
+      <div class="order-details-grid" id="orderDetails">
+        <!-- Order details will be populated here -->
+      </div>
+
+      <div class="order-items-section">
+        <h6 class="mb-3">Order Items - Select stems to credit</h6>
+        <div class="table-responsive">
+          <table class="order-items-table" id="orderItemsTable">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Total Stems</th>
+                <th>Unit Price</th>
+                <th>Total Amount</th>
+                <th>Stems to Credit</th>
+                <th>Credit Amount</th>
+              </tr>
+            </thead>
+            <tbody id="orderItemsList">
+              <!-- Order items will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Total Credit Calculation -->
+      <div class="total-credit-section" id="totalCreditSection" style="display: none;">
+        <h6><i class="bi bi-calculator"></i> Total Credit Amount</h6>
+        <div class="total-credit-amount" id="totalCreditAmount">0.00 KES</div>
+        <small>This amount will be applied based on order status</small>
+      </div>
+    </div>
+
+    <!-- Credit Note Details Section -->
+    <div class="form-section-card">
+      <h5><i class="bi bi-edit"></i> Credit Note Details</h5>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="{{ form.title.id_for_label }}" class="form-label">
+              Title <span class="text-danger">*</span>
+            </label>
+            {{ form.title }}
+            <div class="help-text">Brief description of the credit note</div>
+            {% if form.title.errors %}
+              <div class="text-danger mt-1">{{ form.title.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="{{ form.reason.id_for_label }}" class="form-label">
+              Reason <span class="text-danger">*</span>
+            </label>
+            {{ form.reason }}
+            <div class="help-text">Detailed reason for the credit</div>
+            {% if form.reason.errors %}
+              <div class="text-danger mt-1">{{ form.reason.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-section-card">
+      <div class="d-flex gap-3 justify-content-end">
+        <a href="{% url 'invoices:credit_note_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-circle"></i>Cancel
+        </a>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <i class="bi bi-check-circle"></i>Create Credit Note
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+$(document).ready(function() {
+  const customerSelect = $('#id_customer');
+  const orderSelect = $('#id_order');
+  const orderPreview = $('#orderPreview');
+  const orderDetails = $('#orderDetails');
+  const orderItemsList = $('#orderItemsList');
+  const totalCreditSection = $('#totalCreditSection');
+  const totalCreditAmount = $('#totalCreditAmount');
+  const submitBtn = $('#submitBtn');
+
+  // Function to load customer orders
+  function loadCustomerOrders(customerId) {
+    if (customerId) {
+      // Reset order selection
+      orderSelect.html('<option value="">Loading orders...</option>').prop('disabled', true);
+      orderPreview.removeClass('show');
+
+      // Fetch customer orders
+      console.log('Fetching orders for customer:', customerId);
+      console.log('AJAX URL:', `/invoices/ajax/customer-orders/?customer_id=${customerId}`);
+
+      $.ajax({
+        url: `/invoices/ajax/customer-orders/?customer_id=${customerId}`,
+        method: 'GET',
+        dataType: 'json',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        success: function(data) {
+          console.log('Orders data received:', data);
+          if (data.orders && data.orders.length > 0) {
+            orderSelect.html('<option value="">Select an order...</option>');
+            data.orders.forEach(function(order) {
+              orderSelect.append(`<option value="${order.id}" data-status="${order.status}" data-currency="${order.currency}">${order.invoice_code} - ${order.date} (${order.status}) - ${order.total_amount} ${order.currency}</option>`);
+            });
+            orderSelect.prop('disabled', false);
+          } else {
+            orderSelect.html('<option value="">No orders found</option>');
+            orderSelect.prop('disabled', true);
+          }
+        },
+        error: function(xhr, status, error) {
+          console.error('Failed to fetch orders:', error);
+          console.error('Status:', status);
+          console.error('Response:', xhr.responseText);
+          console.error('Status Code:', xhr.status);
+          orderSelect.html('<option value="">Error loading orders</option>');
+          orderSelect.prop('disabled', true);
+        }
+      });
+    } else {
+      orderSelect.html('<option value="">Select customer first...</option>');
+      orderSelect.prop('disabled', true);
+      orderPreview.removeClass('show');
+    }
+  }
+
+  // Customer selection change
+  customerSelect.on('change', function() {
+    const customerId = $(this).val();
+    loadCustomerOrders(customerId);
+  });
+
+  // Check if we're editing (form has initial values)
+  const initialCustomerId = customerSelect.val();
+  const initialOrderId = orderSelect.val();
+
+  if (initialCustomerId && initialOrderId) {
+    console.log('Editing mode detected. Loading orders for customer:', initialCustomerId);
+    console.log('Initial order ID:', initialOrderId);
+
+    // Load orders for the initial customer
+    loadCustomerOrders(initialCustomerId);
+
+    // After orders are loaded, set the selected order
+    setTimeout(function() {
+      console.log('Checking for order option:', initialOrderId);
+      console.log('Available options:', orderSelect.find('option').map(function() { return $(this).val(); }).get());
+
+      if (orderSelect.find(`option[value="${initialOrderId}"]`).length > 0) {
+        orderSelect.val(initialOrderId);
+        console.log('Order selected:', orderSelect.val());
+        // Trigger order selection change to load order details
+        orderSelect.trigger('change');
+      } else {
+        console.log('Order option not found, will retry...');
+        // Retry after another delay
+        setTimeout(function() {
+          if (orderSelect.find(`option[value="${initialOrderId}"]`).length > 0) {
+            orderSelect.val(initialOrderId);
+            orderSelect.trigger('change');
+          }
+        }, 2000);
+      }
+    }, 1500); // Wait longer for orders to load
+  }
+
+  // Order selection change
+  orderSelect.on('change', function() {
+    const orderId = $(this).val();
+    const selectedOption = $(this).find('option:selected');
+    const orderStatus = selectedOption.data('status');
+    const orderCurrency = selectedOption.data('currency');
+
+    if (orderId) {
+      // Fetch order details
+      console.log('Fetching order items for order:', orderId);
+      console.log('AJAX URL:', `/invoices/ajax/order-items/?order_id=${orderId}`);
+
+      $.ajax({
+        url: `/invoices/ajax/order-items/?order_id=${orderId}`,
+        method: 'GET',
+        dataType: 'json',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        success: function(data) {
+          console.log('Order items data received:', data);
+          if (data.items && data.items.length > 0) {
+            // Populate order details
+            orderDetails.html(`
+              <div class="order-detail-item">
+                <span class="order-detail-label">Order ID</span>
+                <span class="order-detail-value">${selectedOption.text().split(' - ')[0]}</span>
+              </div>
+              <div class="order-detail-item">
+                <span class="order-detail-label">Status</span>
+                <span class="order-detail-value">
+                  <span class="status-badge status-${orderStatus}">${orderStatus}</span>
+                </span>
+              </div>
+              <div class="order-detail-item">
+                <span class="order-detail-label">Total Items</span>
+                <span class="order-detail-value">${data.items.length}</span>
+              </div>
+              <div class="order-detail-item">
+                <span class="order-detail-label">Currency</span>
+                <span class="order-detail-value">${orderCurrency}</span>
+              </div>
+            `);
+
+            // Populate order items with credit input fields
+            let itemsHtml = '';
+            data.items.forEach(function(item, index) {
+              itemsHtml += `
+                <tr>
+                  <td>${item.product_name}</td>
+                  <td>${item.stems} stems</td>
+                  <td>${item.price_per_stem} ${orderCurrency}</td>
+                  <td>${item.total_amount} ${orderCurrency}</td>
+                  <td>
+                    <input type="number" class="credit-input"
+                           data-item-id="${item.id}"
+                           data-price="${item.price_per_stem}"
+                           data-max-stems="${item.stems}"
+                           data-currency="${orderCurrency}"
+                           min="0" max="${item.stems}"
+                           placeholder="0"
+                           onchange="calculateCreditAmount(this)">
+                  </td>
+                  <td>
+                    <span class="credit-amount" id="credit-amount-${item.id}">0.00 ${orderCurrency}</span>
+                  </td>
+                </tr>
+              `;
+            });
+            orderItemsList.html(itemsHtml);
+
+            // Show order preview
+            orderPreview.addClass('show');
+
+            // Auto-populate title
+            const orderCode = selectedOption.text().split(' - ')[0];
+            $('#id_title').val(`Credit Note for ${orderCode}`);
+          }
+        },
+        error: function(xhr, status, error) {
+          console.error('Failed to load order items:', error);
+          console.error('Status:', status);
+          console.error('Response:', xhr.responseText);
+          console.error('Status Code:', xhr.status);
+        }
+      });
+    } else {
+      orderPreview.removeClass('show');
+    }
+  });
+
+  // Calculate credit amount for individual items
+  window.calculateCreditAmount = function(input) {
+    const stems = parseInt(input.value) || 0;
+    const price = parseFloat(input.dataset.price);
+    const itemId = input.dataset.itemId;
+    const currency = input.dataset.currency;
+
+    const creditAmount = stems * price;
+    $(`#credit-amount-${itemId}`).text(`${creditAmount.toFixed(2)} ${currency}`);
+
+    // Calculate total credit
+    calculateTotalCredit();
+  };
+
+  // Calculate total credit amount
+  function calculateTotalCredit() {
+    let total = 0;
+    $('.credit-input').each(function() {
+      const stems = parseInt($(this).val()) || 0;
+      const price = parseFloat($(this).data('price'));
+      total += stems * price;
+    });
+
+    if (total > 0) {
+      const currency = $('.credit-input').first().data('currency');
+      totalCreditAmount.text(`${total.toFixed(2)} ${currency}`);
+      totalCreditSection.show();
+    } else {
+      totalCreditSection.hide();
+    }
+  }
+
+  // Form submission
+  $('#creditNoteForm').on('submit', function(e) {
+    const orderId = orderSelect.val();
+    if (!orderId) {
+      e.preventDefault();
+      alert('Please select an order before continuing.');
+      return false;
+    }
+
+    // Validate that at least one item has credits
+    let hasCredits = false;
+    $('.credit-input').each(function() {
+      if (parseInt($(this).val()) > 0) {
+        hasCredits = true;
+        return false; // break loop
+      }
+    });
+
+    if (!hasCredits) {
+      e.preventDefault();
+      alert('Please select stems to credit for at least one item.');
+      return false;
+    }
+
+    // Create hidden fields for credit amounts and stems
+    const hiddenFieldsContainer = $('#hiddenCreditFields');
+    hiddenFieldsContainer.empty();
+
+    $('.credit-input').each(function() {
+      const stems = parseInt($(this).val()) || 0;
+      if (stems > 0) {
+        const itemId = $(this).data('item-id');
+        const price = parseFloat($(this).data('price'));
+        const creditAmount = stems * price;
+
+        // Add hidden field for stems
+        hiddenFieldsContainer.append(`
+          <input type="hidden" name="stems_to_credit_${itemId}" value="${stems}">
+        `);
+
+        // Add hidden field for credit amount
+        hiddenFieldsContainer.append(`
+          <input type="hidden" name="credit_amount_${itemId}" value="${creditAmount.toFixed(2)}">
+        `);
+      }
+    });
+
+    // Show loading state
+    submitBtn.prop('disabled', true).addClass('loading');
+    submitBtn.html('<span class="spinner"></span> Creating Credit Note...');
+
+    return true;
+  });
+});
+</script>
+{% endblock %}

@@ -23,6 +23,9 @@
             <a href="{% url 'customers:customer_edit' customer.id %}" class="btn btn-outline-secondary">
                 <i class="bi bi-pencil"></i> Edit
             </a>
+            <a href="/invoices/credit-notes/?customer={{ customer.id }}" class="btn btn-outline-info">
+                <i class="bi bi-receipt-cutoff"></i> Credit Notes
+            </a>
             <button type="button" class="btn btn-outline-danger"
                     data-bs-toggle="modal" data-bs-target="#deleteModal">
                 <i class="bi bi-trash"></i> Delete
