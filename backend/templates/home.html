@@ -10,13 +10,16 @@
       <h1>Hello, Renny</h1>
       <p>Your current sales summary and activity.</p>
     </div>
-    <div class="col-md-4 text-end">
-      <div class="view-buttons">
-        <a href="{% url 'graphs' %}" class="view-btn">
-          <i class="bi bi-bar-chart me-2"></i>View Analytics
-        </a>
-      </div>
+      <div class="col-md-4 text-end">
+    <div class="view-buttons">
+      <a href="{% url 'graphs' %}" class="view-btn">
+        <i class="bi bi-bar-chart me-2"></i>View Analytics
+      </a>
+      <a href="/invoices/credit-notes/" class="view-btn">
+        <i class="bi bi-receipt-cutoff me-2"></i>Credit Notes
+      </a>
     </div>
+  </div>
   </div>
 </div>
 
@@ -57,6 +60,41 @@
       <div class="metric-badge">{{ upcoming_payments.count }} Pending</div>
       <div class="metric-value">{{ upcoming_amount|floatformat:2 }} KES</div>
       <div class="metric-label">Upcoming Payments</div>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Metrics Row -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-badge" style="background-color: var(--accent-magenta); color: white;">Credit Notes</div>
+      <div class="metric-value" style="color: var(--accent-magenta);">0</div>
+      <div class="metric-label">Total Credits</div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-badge" style="background-color: var(--success-green); color: white;">Active</div>
+      <div class="metric-value" style="color: var(--success-green);">0</div>
+      <div class="metric-label">Pending Credits</div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-badge" style="background-color: var(--warning-orange); color: white;">Applied</div>
+      <div class="metric-value" style="color: var(--warning-orange);">0</div>
+      <div class="metric-label">Applied Credits</div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-3">
+    <div class="metric-card">
+      <div class="metric-badge" style="background-color: var(--danger-red); color: white;">Total</div>
+      <div class="metric-value" style="color: var(--danger-red);">0.00 KES</div>
+      <div class="metric-label">Credit Amount</div>
     </div>
   </div>
 </div>

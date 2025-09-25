@@ -6,6 +6,7 @@
   <div>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'orders:order_list' %}">Back</a>
     <a class="btn btn-primary btn-sm" href="{% url 'orders:order_edit' order.id %}">Edit</a>
+    <a class="btn btn-info btn-sm" href="/invoices/credit-notes/?order={{ order.id }}">Credit Notes</a>
     {% if order.invoice.pdf_file %}
       <a class="btn btn-success btn-sm" href="{{ order.invoice.pdf_file.url }}" target="_blank">Invoice PDF</a>
     {% endif %}
