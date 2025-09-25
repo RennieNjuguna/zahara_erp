@@ -171,20 +171,68 @@ Zahara ERP System
 ### Project Structure
 ```
 zahara_erp/
-├── backend/
-│   ├── api/                 # Django REST Framework API
-│   ├── customers/           # Customer management
-│   ├── orders/             # Order processing
-│   ├── payments/           # Payment system
-│   ├── invoices/           # Invoice management
-│   ├── expenses/           # Expense tracking
-│   ├── employees/          # HR management
-│   ├── planting_schedule/  # Agricultural planning
-│   └── zahara_backend/     # Django project settings
-├── templates/              # Django templates
-├── static/                 # Static files
-├── media/                  # Media files
-└── requirements.txt        # Python dependencies
+├── backend/                    # Django backend application
+│   ├── api/                   # Django REST Framework API
+│   │   ├── __init__.py
+│   │   ├── filters.py         # API filtering classes
+│   │   ├── permissions.py     # Custom permissions
+│   │   ├── serializers.py     # Data serializers
+│   │   ├── urls.py           # API URL routing
+│   │   └── views.py          # API ViewSets
+│   ├── customers/             # Customer management
+│   │   ├── models.py         # Customer and Branch models
+│   │   ├── views.py          # Customer views
+│   │   ├── admin.py          # Admin interface
+│   │   └── templates/        # Customer templates
+│   ├── orders/               # Order processing
+│   │   ├── models.py         # Order and OrderItem models
+│   │   ├── views.py          # Order views
+│   │   ├── forms.py          # Order forms
+│   │   └── management/       # Management commands
+│   ├── payments/             # Payment system
+│   │   ├── models.py         # Payment and allocation models
+│   │   ├── views.py          # Payment views
+│   │   └── templates/        # Payment templates
+│   ├── invoices/             # Invoice management
+│   │   ├── models.py         # Invoice and CreditNote models
+│   │   ├── views.py          # Invoice views
+│   │   ├── forms.py          # Invoice forms
+│   │   └── templates/        # Invoice templates
+│   ├── expenses/             # Expense tracking
+│   │   ├── models.py         # Expense models
+│   │   ├── views.py          # Expense views
+│   │   └── management/       # Management commands
+│   ├── employees/            # HR management
+│   │   ├── models.py         # Employee models
+│   │   ├── views.py          # Employee views
+│   │   └── templates/        # Employee templates
+│   ├── products/             # Product catalog
+│   │   ├── models.py         # Product and pricing models
+│   │   ├── views.py          # Product views
+│   │   └── templates/        # Product templates
+│   ├── planting_schedule/    # Agricultural planning
+│   │   ├── models.py         # Crop and FarmBlock models
+│   │   ├── views.py          # Agricultural views
+│   │   └── templates/        # Agricultural templates
+│   ├── zahara_backend/       # Django project settings
+│   │   ├── settings.py       # Project configuration
+│   │   ├── urls.py          # Main URL routing
+│   │   └── wsgi.py          # WSGI configuration
+│   ├── templates/            # Global Django templates
+│   ├── static/              # Static files (CSS, JS, images)
+│   ├── staticfiles/         # Collected static files
+│   ├── media/               # User uploaded files
+│   │   ├── invoices_pdfs/   # Generated invoice PDFs
+│   │   ├── expense_attachments/ # Expense receipts
+│   │   └── account_statements_pdfs/ # Account statements
+│   ├── manage.py            # Django management script
+│   ├── requirements.txt     # Python dependencies
+│   ├── urls.py             # Root URL configuration
+│   └── db.sqlite3          # SQLite database
+├── venv/                    # Python virtual environment
+├── README.md               # Project documentation
+├── ZAHARA_ERP_API_DOCUMENTATION.md # Complete API docs
+└── Zahara_ERP_Documentation.zip # Archived documentation
 ```
 
 ### Key Modules
