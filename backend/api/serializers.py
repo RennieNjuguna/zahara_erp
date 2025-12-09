@@ -36,13 +36,13 @@ class CustomerSerializer(serializers.ModelSerializer):
     branches = BranchSerializer(many=True, read_only=True)
     order_statistics = serializers.SerializerMethodField()
     current_balance = serializers.SerializerMethodField()
-    
+
     def get_order_statistics(self, obj):
         return obj.get_order_statistics()
-    
+
     def get_current_balance(self, obj):
         return obj.current_balance()
-    
+
     class Meta:
         model = Customer
         fields = [
@@ -54,15 +54,15 @@ class CustomerSerializer(serializers.ModelSerializer):
 class CustomerDetailSerializer(CustomerSerializer):
     recent_orders = serializers.SerializerMethodField()
     payment_history = serializers.SerializerMethodField()
-    
+
     def get_recent_orders(self, obj):
         orders = obj.orders.all().order_by('-date')[:10]
         return OrderSummarySerializer(orders, many=True).data
-    
+
     def get_payment_history(self, obj):
         payments = Payment.objects.filter(customer=obj).order_by('-payment_date')[:10]
         return PaymentSummarySerializer(payments, many=True).data
-    
+
     class Meta(CustomerSerializer.Meta):
         fields = CustomerSerializer.Meta.fields + [
             'recent_orders', 'payment_history'
@@ -72,11 +72,11 @@ class CustomerDetailSerializer(CustomerSerializer):
 # Product Serializers
 class ProductSerializer(serializers.ModelSerializer):
     customer_prices = serializers.SerializerMethodField()
-    
+
     def get_customer_prices(self, obj):
         prices = obj.customer_prices.all()[:10]  # Limit for performance
         return CustomerProductPriceSerializer(prices, many=True).data
-    
+
     class Meta:
         model = Product
         fields = ['id', 'name', 'stem_length_cm', 'customer_prices']
@@ -85,11 +85,11 @@ class ProductSerializer(serializers.ModelSerializer):
 class CustomerProductPriceSerializer(serializers.ModelSerializer):
     customer = CustomerSummarySerializer(read_only=True)
     product = ProductSerializer(read_only=True)
-    
+
     class Meta:
         model = CustomerProductPrice
         fields = [
-            'id', 'customer', 'product', 'stem_length_cm', 
+            'id', 'customer', 'product', 'stem_length_cm',
             'price_per_stem', 'last_updated'
         ]
         read_only_fields = ['id']
@@ -98,22 +98,22 @@ class CustomerProductPriceSerializer(serializers.ModelSerializer):
 # Order Serializers
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
-    
+
     class Meta:
         model = OrderItem
         fields = [
-            'id', 'product', 'stem_length_cm', 'boxes', 
+            'id', 'product', 'stem_length_cm', 'boxes',
             'stems_per_box', 'stems', 'price_per_stem', 'total_amount'
         ]
 
 
 class OrderSummarySerializer(serializers.ModelSerializer):
     customer = CustomerSummarySerializer(read_only=True)
-    
+
     class Meta:
         model = Order
         fields = [
-            'id', 'invoice_code', 'customer', 'total_amount', 
+            'id', 'invoice_code', 'customer', 'total_amount',
             'currency', 'date', 'status'
         ]
 
@@ -132,20 +132,20 @@ class OrderSerializer(serializers.ModelSerializer):
     outstanding_amount = serializers.SerializerMethodField()
     total_paid_amount = serializers.SerializerMethodField()
     credit_notes = serializers.SerializerMethodField()
-    
+
     def get_payment_status(self, obj):
         return obj.payment_status()
-    
+
     def get_outstanding_amount(self, obj):
         return str(obj.outstanding_amount())
-    
+
     def get_total_paid_amount(self, obj):
         return str(obj.total_paid_amount())
-    
+
     def get_credit_notes(self, obj):
         credit_notes = obj.credit_notes.all()
         return CreditNoteSummarySerializer(credit_notes, many=True).data
-    
+
     class Meta:
         model = Order
         fields = [
@@ -167,32 +167,32 @@ class CreateOrderItemSerializer(serializers.Serializer):
 
 class CreateOrderSerializer(serializers.ModelSerializer):
     items = CreateOrderItemSerializer(many=True)
-    
+
     class Meta:
         model = Order
         fields = [
             'customer', 'branch', 'date', 'remarks', 'logistics_provider',
             'logistics_cost', 'tracking_number', 'delivery_status', 'items'
         ]
-    
+
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         order = Order.objects.create(**validated_data)
-        
+
         for item_data in items_data:
             OrderItem.objects.create(order=order, **item_data)
-        
+
         return order
 
 
 class CustomerOrderDefaultsSerializer(serializers.ModelSerializer):
     customer = CustomerSummarySerializer(read_only=True)
     product = ProductSerializer(read_only=True)
-    
+
     class Meta:
         model = CustomerOrderDefaults
         fields = [
-            'id', 'customer', 'product', 'stem_length_cm', 
+            'id', 'customer', 'product', 'stem_length_cm',
             'price_per_stem', 'last_used'
         ]
 
@@ -206,7 +206,7 @@ class PaymentTypeSerializer(serializers.ModelSerializer):
 
 class PaymentAllocationSerializer(serializers.ModelSerializer):
     order = OrderSummarySerializer(read_only=True)
-    
+
     class Meta:
         model = PaymentAllocation
         fields = ['id', 'order', 'amount', 'allocated_at']
@@ -219,7 +219,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     allocated_amount = serializers.ReadOnlyField()
     unallocated_amount = serializers.ReadOnlyField()
     is_fully_allocated = serializers.ReadOnlyField()
-    
+
     class Meta:
         model = Payment
         fields = [
@@ -246,18 +246,18 @@ class PaymentAllocationRequestSerializer(serializers.Serializer):
 
 class PaymentSummarySerializer(serializers.ModelSerializer):
     customer = CustomerSummarySerializer(read_only=True)
-    
+
     class Meta:
         model = Payment
         fields = [
-            'payment_id', 'customer', 'amount', 'currency', 
+            'payment_id', 'customer', 'amount', 'currency',
             'payment_date', 'status', 'reference_number'
         ]
 
 
 class CustomerBalanceSerializer(serializers.ModelSerializer):
     customer = CustomerSummarySerializer(read_only=True)
-    
+
     class Meta:
         model = CustomerBalance
         fields = [
@@ -267,11 +267,11 @@ class CustomerBalanceSerializer(serializers.ModelSerializer):
 
 class AccountStatementSerializer(serializers.ModelSerializer):
     customer = CustomerSummarySerializer(read_only=True)
-    
+
     class Meta:
         model = AccountStatement
         fields = [
-            'id', 'customer', 'statement_type', 'statement_date', 
+            'id', 'customer', 'statement_type', 'statement_date',
             'start_date', 'end_date', 'opening_balance', 'closing_balance',
             'total_orders', 'total_credits', 'total_payments',
             'pdf_file', 'created_at', 'generated_by'
@@ -281,18 +281,18 @@ class AccountStatementSerializer(serializers.ModelSerializer):
 # Invoice Serializers
 class InvoiceSerializer(serializers.ModelSerializer):
     order = OrderSummarySerializer(read_only=True)
-    
+
     class Meta:
         model = Invoice
         fields = [
-            'id', 'order', 'invoice_code', 'pdf_file', 
+            'id', 'order', 'invoice_code', 'pdf_file',
             'created_at', 'last_updated'
         ]
 
 
 class CreditNoteItemSerializer(serializers.ModelSerializer):
     order_item = OrderItemSerializer(read_only=True)
-    
+
     class Meta:
         model = CreditNoteItem
         fields = [
@@ -304,7 +304,7 @@ class CreditNoteSerializer(serializers.ModelSerializer):
     order = OrderSummarySerializer(read_only=True)
     created_by = UserSerializer(read_only=True)
     items = CreditNoteItemSerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = CreditNote
         fields = [
@@ -322,18 +322,18 @@ class CreateCreditNoteItemSerializer(serializers.Serializer):
 
 class CreateCreditNoteSerializer(serializers.ModelSerializer):
     items = CreateCreditNoteItemSerializer(many=True)
-    
+
     class Meta:
         model = CreditNote
         fields = ['order', 'title', 'reason', 'items']
-    
+
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         credit_note = CreditNote.objects.create(**validated_data)
-        
+
         for item_data in items_data:
             CreditNoteItem.objects.create(credit_note=credit_note, **item_data)
-        
+
         return credit_note
 
 
@@ -351,7 +351,7 @@ class ExpenseAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExpenseAttachment
         fields = [
-            'id', 'file', 'file_type', 'original_filename', 
+            'id', 'file', 'file_type', 'original_filename',
             'description', 'uploaded_at'
         ]
 
@@ -359,7 +359,7 @@ class ExpenseAttachmentSerializer(serializers.ModelSerializer):
 class ExpenseSerializer(serializers.ModelSerializer):
     category = ExpenseCategorySerializer(read_only=True)
     attachments = ExpenseAttachmentSerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Expense
         fields = [
@@ -388,7 +388,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = [
-            'id', 'first_name', 'last_name', 'position', 
+            'id', 'first_name', 'last_name', 'position',
             'email', 'phone_number', 'date_joined'
         ]
 

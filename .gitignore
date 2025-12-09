@@ -5,6 +5,9 @@ __pycache__/
 
 # Virtual Environment
 venv/
+venv_new/
+find_null_bytes.py
+check_db_integrity.py
 
 # Django
 *.log

@@ -7,6 +7,7 @@ Zahara ERP is a comprehensive Enterprise Resource Planning system designed speci
 ## 🚀 Features
 
 ### ✅ Implemented Features
+
 - **Customer Management**: Complete customer database with branches and preferences
 - **Product Catalog**: Product management with customer-specific pricing
 - **Order Processing**: Full order lifecycle from creation to delivery
@@ -19,6 +20,7 @@ Zahara ERP is a comprehensive Enterprise Resource Planning system designed speci
 - **Multi-Currency Support**: KSH, USD, GBP, EUR currency support
 
 ### ⚠️ Under Construction
+
 - **Credit Note System**: Credit note processing and management (in development)
 
 ## 🛠️ Technology Stack
@@ -33,29 +35,46 @@ Zahara ERP is a comprehensive Enterprise Resource Planning system designed speci
 ## 📦 Installation
 
 ### Prerequisites
+
 - Python 3.7+
 - pip (Python package manager)
 
 ### Setup Instructions
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/rennydev/zahara-erp.git
    cd zahara-erp
    ```
 
-2. **Install dependencies**
+2. **Setup Virtual Environment & Install Dependencies**
+
+   > **Note:** We use a new virtual environment `venv_new` and have adjusted dependencies for Python 3.7 compatibility.
+
    ```bash
    cd backend
+   # Create new virtual environment
+   python -m venv venv_new
+
+   # Activate it
+   # Windows:
+   .\venv_new\Scripts\activate
+   # Linux/Mac:
+   # source venv_new/bin/activate
+
+   # Install dependencies
    pip install -r requirements.txt
    ```
 
 3. **Run database migrations**
+
    ```bash
    python manage.py migrate
    ```
 
 4. **Create superuser account**
+
    ```bash
    python manage.py createsuperuser
    ```
@@ -104,11 +123,13 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ## 🧪 Testing
 
 ### Manual Testing
+
 1. Visit the API browser at http://localhost:8000/api/v1/
 2. Create a user account via Django admin
 3. Test endpoints using the interactive interface
 
 ### API Testing
+
 ```bash
 # Test API endpoints
 cd backend
@@ -118,7 +139,9 @@ python -c "import requests; print(requests.get('http://localhost:8000/api/v1/').
 ## 🚀 Production Deployment
 
 ### Database Configuration
+
 Update `settings.py` for PostgreSQL:
+
 ```python
 DATABASES = {
     'default': {
@@ -133,7 +156,9 @@ DATABASES = {
 ```
 
 ### Environment Variables
+
 Create a `.env` file:
+
 ```bash
 SECRET_KEY=your-secret-key
 DEBUG=False
@@ -142,6 +167,7 @@ DATABASE_URL=postgresql://user:pass@localhost/zahara_erp
 ```
 
 ### Production Commands
+
 ```bash
 # Install production dependencies
 pip install gunicorn whitenoise
@@ -169,6 +195,7 @@ Zahara ERP System
 ## 🔧 Development
 
 ### Project Structure
+
 ```
 zahara_erp/
 ├── backend/                    # Django backend application
@@ -236,6 +263,7 @@ zahara_erp/
 ```
 
 ### Key Modules
+
 - **Customer Management**: Customer database, branches, preferences
 - **Order Processing**: Orders, order items, customer defaults
 - **Payment System**: Payments, allocations, customer balances
@@ -258,11 +286,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 👨‍💻 Author
 
 **Renny Dev**
+
 - GitHub: [@rennydev](https://github.com/rennydev)
 
 ## 📞 Support
 
 For support and questions:
+
 - Create an issue on GitHub
 - Check the API documentation in `ZAHARA_ERP_API_DOCUMENTATION.md`
 
