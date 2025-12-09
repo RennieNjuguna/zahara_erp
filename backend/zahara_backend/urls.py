@@ -18,9 +18,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import home, graphs
+from django.conf.urls.static import static
+from .views import home, graphs, custom_login_view
 
 urlpatterns = [
+    path('login/', custom_login_view, name='login'),
     path('', home, name='home'),
     path('graphs/', graphs, name='graphs'),
     path('admin/', admin.site.urls),
