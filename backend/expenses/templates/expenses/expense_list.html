@@ -29,7 +29,6 @@
                             <th>Name</th>
                             <th>Amount</th>
                             <th>Category</th>
-                            <th>Status</th>
                             <th>Date</th>
                             <th>Actions</th>
                         </tr>
@@ -45,9 +44,6 @@
                                 {% else %}
                                 <span class="badge bg-secondary">No Category</span>
                                 {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-{{ expense.status }}">{{ expense.get_status_display }}</span>
                             </td>
                             <td>{{ expense.date_incurred|date:"M d, Y" }}</td>
                             <td>

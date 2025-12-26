@@ -41,18 +41,18 @@ class ExpenseCategoryAdmin(admin.ModelAdmin):
 class ExpenseAdmin(admin.ModelAdmin):
     """Admin interface for expenses"""
     list_display = [
-        'name', 'amount', 'currency', 'category', 'status', 'date_incurred',
+        'name', 'amount', 'currency', 'category', 'date_incurred',
         'vendor_name', 'attachment_count', 'created_at'
     ]
     list_filter = [
-        'status', 'currency', 'category', 'is_recurring', 'date_incurred',
+        'currency', 'category', 'is_recurring', 'date_incurred',
         'created_at'
     ]
     search_fields = [
         'name', 'description', 'reference_number', 'vendor_name', 'tags'
     ]
     readonly_fields = [
-        'created_at', 'updated_at', 'approved_at', 'is_overdue', 'days_overdue'
+        'created_at', 'updated_at', 'is_overdue', 'days_overdue'
     ]
     date_hierarchy = 'date_incurred'
     ordering = ['-date_incurred', '-created_at']
@@ -66,9 +66,6 @@ class ExpenseAdmin(admin.ModelAdmin):
         }),
         ('Timing', {
             'fields': ('date_incurred', 'due_date')
-        }),
-        ('Status & Approval', {
-            'fields': ('status', 'approved_by', 'approved_at', 'rejection_reason')
         }),
         ('Payment', {
             'fields': ('payment_method', 'payment_date')
@@ -109,22 +106,15 @@ class ExpenseAdmin(admin.ModelAdmin):
         return obj.get_days_overdue()
     days_overdue.short_description = 'Days Overdue'
 
-    def save_model(self, request, obj, form, change):
-        """Custom save logic for approval tracking"""
-        if 'status' in form.changed_data and obj.status == 'approved':
-            obj.approved_by = request.user.get_full_name() or request.user.username
-            obj.approved_at = timezone.now()
-        super().save_model(request, obj, form, change)
-
 
 @admin.register(ExpenseAttachment)
 class ExpenseAttachmentAdmin(admin.ModelAdmin):
     """Admin interface for expense attachments"""
     list_display = [
         'expense', 'file_type', 'original_filename', 'file_preview',
-        'uploaded_at', 'expense_status'
+        'uploaded_at'
     ]
-    list_filter = ['file_type', 'uploaded_at', 'expense__status']
+    list_filter = ['file_type', 'uploaded_at']
     search_fields = ['expense__name', 'original_filename', 'description']
     readonly_fields = ['uploaded_at', 'file_extension', 'is_image', 'is_pdf']
     ordering = ['-uploaded_at']
@@ -160,21 +150,6 @@ class ExpenseAttachmentAdmin(admin.ModelAdmin):
                 obj.get_file_extension().upper()
             )
     file_preview.short_description = 'Preview'
-
-    def expense_status(self, obj):
-        """Show expense status with color coding"""
-        status_colors = {
-            'pending': 'warning',
-            'approved': 'success',
-            'rejected': 'danger',
-            'paid': 'info'
-        }
-        color = status_colors.get(obj.expense.status, 'secondary')
-        return format_html(
-            '<span class="badge badge-{}">{}</span>',
-            color, obj.expense.get_status_display()
-        )
-    expense_status.short_description = 'Expense Status'
 
     def file_extension(self, obj):
         """Get file extension"""

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
 {% block title %}Dashboard - Zahara ERP{% endblock %}
 
@@ -8,14 +9,17 @@
   <div class="row align-items-center">
     <div class="col-md-8">
       <h1>Hello, Renny</h1>
-      <p>Your current sales summary and activity.</p>
+      <p class="text-muted">Dashboard for {{ current_month }}</p>
     </div>
       <div class="col-md-4 text-end">
     <div class="view-buttons">
       <a href="{% url 'graphs' %}" class="view-btn">
-        <i class="bi bi-bar-chart me-2"></i>View Analytics
+        <i class="bi bi-bar-chart me-2"></i>Analytics
       </a>
-      <a href="/invoices/credit-notes/" class="view-btn">
+      <a href="{% url 'update_rates' %}" class="view-btn ms-2 bg-info" title="Update Exchange Rates from API">
+        <i class="bi bi-arrow-repeat me-2"></i>Rates
+      </a>
+      <a href="/invoices/credit-notes/" class="view-btn ms-2">
         <i class="bi bi-receipt-cutoff me-2"></i>Credit Notes
       </a>
     </div>
@@ -23,152 +27,215 @@
   </div>
 </div>
 
-<!-- Key Metrics Cards -->
-<div class="row mb-4">
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-change {% if revenue_change >= 0 %}up{% else %}down{% endif %}">
-        <i class="bi bi-arrow-{% if revenue_change >= 0 %}up{% else %}down{% endif %} me-2"></i>
-        {{ revenue_change|floatformat:1 }}%
-      </div>
-      <div class="metric-value">{{ today_revenue|floatformat:2 }} KES</div>
-      <div class="metric-label">Today's revenue</div>
+<!-- Monthly Metrics Rows -->
+<div class="row g-4 mb-4">
+    <!-- 1. Month Total Sales Value (Was Revenue) -->
+    <div class="col-md-3">
+        <div class="metric-card h-100 border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-primary bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-cart-check text-primary fs-4"></i>
+                </div>
+                <div class="ms-3">
+                    <div class="text-muted small">Total Orders</div>
+                    <div class="fs-4 fw-bold text-primary"><small class="text-muted fs-6 align-middle me-1">KES</small>{{ metrics.total_sales|floatformat:2|intcomma }}</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-change {% if expense_change >= 0 %}up{% else %}down{% endif %}">
-        <i class="bi bi-arrow-{% if expense_change >= 0 %}up{% else %}down{% endif %} me-2"></i>
-        {{ expense_change|floatformat:1 }}%
-      </div>
-      <div class="metric-value">{{ today_expenses|floatformat:2 }} KES</div>
-      <div class="metric-label">Today's expenses</div>
+    <!-- 2. Payments Received (New/Renamed) -->
+    <div class="col-md-3">
+        <div class="metric-card h-100 border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-success bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-currency-dollar text-success fs-4"></i>
+                </div>
+                <div class="ms-3">
+                    <div class="text-muted small">Total Received</div>
+                    <div class="fs-4 fw-bold text-success"><small class="text-muted fs-6 align-middle me-1">KES</small>{{ metrics.revenue|floatformat:2|intcomma }}</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-badge">{{ overdue_orders.count }} Unpaid</div>
-      <div class="metric-value">{{ overdue_amount|floatformat:2 }} KES</div>
-      <div class="metric-label">Unpaid Orders</div>
+    <!-- 3. Month Total Expenses -->
+    <div class="col-md-3">
+        <div class="metric-card h-100 border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-danger bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-arrow-down-left text-danger fs-4"></i>
+                </div>
+                <div class="ms-3">
+                    <div class="text-muted small">Month Expenses</div>
+                    <div class="fs-4 fw-bold text-danger"><small class="text-muted fs-6 align-middle me-1">KES</small>{{ metrics.expenses|floatformat:2|intcomma }}</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-badge">{{ upcoming_payments.count }} Pending</div>
-      <div class="metric-value">{{ upcoming_amount|floatformat:2 }} KES</div>
-      <div class="metric-label">Upcoming Payments</div>
+    <!-- 4. Order Status (Merged) -->
+    <div class="col-md-3">
+        <div class="metric-card h-100 border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-warning bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-pie-chart text-warning fs-4"></i>
+                </div>
+                <div class="ms-3 flex-grow-1">
+                    <div class="text-muted small mb-1">Order Status</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-success bg-opacity-10 text-success">{{ metrics.paid_orders }} Paid</span>
+                        <span class="badge bg-warning bg-opacity-10 text-warning">{{ metrics.unpaid_orders }} Unpaid</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-<!-- Additional Metrics Row -->
-<div class="row mb-4">
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-badge" style="background-color: var(--accent-magenta); color: white;">Credit Notes</div>
-      <div class="metric-value" style="color: var(--accent-magenta);">0</div>
-      <div class="metric-label">Total Credits</div>
+<div class="row g-4 mb-4">
+    <!-- 5. Total Credits -->
+    <div class="col-md-3">
+        <div class="metric-card h-100 border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-info bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-receipt text-info fs-4"></i>
+                </div>
+                <div class="ms-3">
+                    <div class="text-muted small">Total Credits</div>
+                    <div class="fs-4 fw-bold text-info">{{ metrics.credits|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-badge" style="background-color: var(--success-green); color: white;">Active</div>
-      <div class="metric-value" style="color: var(--success-green);">0</div>
-      <div class="metric-label">Pending Credits</div>
+    <!-- 6. Most Ordered Product -->
+    <div class="col-md-4">
+        <div class="metric-card h-100 border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-secondary bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-flower1 text-secondary fs-4"></i>
+                </div>
+                <div class="ms-3">
+                    <div class="text-muted small">Top Product</div>
+                    <div class="fw-bold text-dark text-truncate" style="max-width: 150px;" title="{{ metrics.top_product }}">
+                        {{ metrics.top_product }}
+                    </div>
+                    <div class="small text-muted">{{ metrics.top_product_qty }} sold</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-badge" style="background-color: var(--warning-orange); color: white;">Applied</div>
-      <div class="metric-value" style="color: var(--warning-orange);">0</div>
-      <div class="metric-label">Applied Credits</div>
+    <!-- 7. Highest Ordering Customer -->
+    <div class="col-md-5">
+        <div class="metric-card h-100 border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 bg-success bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-trophy text-success fs-4"></i>
+                </div>
+                <div class="ms-3">
+                    <div class="text-muted small">Top Customer</div>
+                    <div class="fw-bold text-dark text-truncate" style="max-width: 200px;" title="{{ metrics.top_customer }}">
+                        {{ metrics.top_customer }}
+                    </div>
+                    <div class="small text-muted">{{ metrics.top_customer_amount|floatformat:2 }} spent</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-badge" style="background-color: var(--danger-red); color: white;">Total</div>
-      <div class="metric-value" style="color: var(--danger-red);">0.00 KES</div>
-      <div class="metric-label">Credit Amount</div>
-    </div>
-  </div>
 </div>
 
 <!-- Data Cards Row -->
 <div class="row">
-  <!-- Invoices Table -->
-  <div class="col-md-8 mb-4">
-    <div class="data-card">
-      <h5 class="card-title">Recent Orders</h5>
-      <p class="card-subtitle">Recent orders from your database</p>
+  <!-- Recent Transactions (Unified Payment & Expense) -->
+  <div class="col-md-6 mb-4">
+    <div class="data-card h-100">
+      <h5 class="card-title mb-3" style="color: var(--accent-magenta);">
+          <i class="bi bi-list-check me-2"></i>Recent Transactions
+      </h5>
 
+      {% if recent_transactions %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <tbody>
+                {% for transaction in recent_transactions %}
+                <tr>
+                    <td style="width: 50px;" class="text-center">
+                        {% if transaction.type == 'payment' %}
+                            <div class="bg-success bg-opacity-10 rounded-circle p-2 d-inline-block">
+                                <i class="bi bi-arrow-down-left text-success"></i>
+                            </div>
+                        {% else %}
+                            <div class="bg-danger bg-opacity-10 rounded-circle p-2 d-inline-block">
+                                <i class="bi bi-arrow-up-right text-danger"></i>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-medium text-dark">{{ transaction.description }}</div>
+                        <div class="text-muted small">{{ transaction.date|date:"M d" }} &bull; {{ transaction.reference|default:"-" }}</div>
+                    </td>
+                    <td class="text-end">
+                        <span class="fw-bold {% if transaction.type == 'payment' %}text-success{% else %}text-danger{% endif %}">
+                            {% if transaction.type == 'payment' %}+{% else %}-{% endif %} {{ transaction.amount|floatformat:2 }}
+                        </span>
+                        <div class="small text-muted">{{ transaction.currency }}</div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <i class="bi bi-inbox text-muted fs-1 d-block mb-2"></i>
+          <p class="text-muted mb-0">No recent transactions</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+    
+  <!-- Recent Orders Table (Keeping existing functionality) -->
+  <div class="col-md-6 mb-4">
+    <div class="data-card h-100">
+      <h5 class="card-title mb-3">
+          <i class="bi bi-cart me-2"></i>Recent Orders
+      </h5>
       <div class="table-responsive">
         {% if recent_orders %}
-        <table class="table">
-          <thead>
+        <table class="table align-middle">
+          <thead class="table-light">
             <tr>
-              <th>Order ID</th>
+              <th>ID</th>
+              <th>Date</th>
               <th>Status</th>
-              <th>Company</th>
-              <th>Amount</th>
-              <th>View</th>
+              <th>Customer</th>
+              <th class="text-end">Amount</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {% for order in recent_orders %}
             <tr>
-              <td><strong>{{ order.invoice_code }}</strong></td>
+              <td><span class="fw-medium">#{{ order.invoice_code }}</span></td>
+              <td><span class="text-muted small">{{ order.date|date:"d M" }}</span></td>
               <td>
                 <span class="status-badge status-{% if order.status == 'paid' %}paid{% elif order.status == 'pending' %}pending{% elif order.status == 'partial' %}partial{% else %}other{% endif %}">
                   {{ order.get_status_display }}
                 </span>
               </td>
-              <td>{{ order.customer.name }}</td>
-              <td>{{ order.total_amount|floatformat:2 }} {{ order.currency }}</td>
-              <td><a href="{% url 'orders:order_detail' order.id %}" class="text-decoration-none" style="color: var(--accent-magenta);">View</a></td>
+              <td><div class="text-truncate" style="max-width: 120px;" title="{{ order.customer.name }}">{{ order.customer.name }}</div></td>
+              <td class="text-end fw-bold">
+                <small class="text-muted fw-normal me-1">{{ order.currency }}</small>{{ order.total_amount|floatformat:0 }}
+              </td>
+              <td class="text-end"><a href="{% url 'orders:order_detail' order.id %}" class="btn btn-sm btn-light"><i class="bi bi-eye"></i></a></td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
         {% else %}
-        <div class="text-center py-4">
-          <i class="bi bi-inbox text-muted fs-1 d-block mb-2"></i>
+        <div class="text-center py-5">
+          <i class="bi bi-cart-x text-muted fs-1 d-block mb-2"></i>
           <p class="text-muted mb-0">No orders found</p>
         </div>
         {% endif %}
       </div>
-    </div>
-  </div>
-
-  <!-- Recent Transactions -->
-  <div class="col-md-4 mb-4">
-    <div class="data-card">
-      <h5 class="card-title" style="color: var(--accent-magenta);">Recent Transactions</h5>
-      <p class="card-subtitle">Last 7 days</p>
-
-      {% if recent_transactions %}
-        {% for transaction in recent_transactions %}
-        <div class="transaction-item">
-          <div>
-            <div class="transaction-company">{{ transaction.company }}</div>
-            <div class="transaction-time">{{ transaction.time|date:"l" }} {{ transaction.time|time:"g:iA" }}</div>
-          </div>
-          <div class="transaction-amount {% if transaction.is_positive %}positive{% else %}negative{% endif %}">
-            {% if transaction.is_positive %}+{% else %}-{% endif %} {{ transaction.amount|floatformat:2 }} {{ transaction.currency }}
-          </div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="text-center py-4">
-          <i class="bi bi-credit-card text-muted fs-1 d-block mb-2"></i>
-          <p class="text-muted mb-0">No recent transactions</p>
-        </div>
-      {% endif %}
     </div>
   </div>
 </div>

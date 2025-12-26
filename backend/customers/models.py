@@ -13,6 +13,8 @@ class Customer(models.Model):
     name = models.CharField(max_length=100)
     short_code = models.CharField(max_length=10, unique=True)
     preferred_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return self.name

@@ -643,3 +643,23 @@ def update_customer_balance_on_order(sender, instance, created, **kwargs):
         defaults={'currency': instance.customer.preferred_currency}
     )
     balance.recalculate_balance()
+
+
+class ExchangeRate(models.Model):
+    """Exchange rates relative to base currency (KSH)"""
+    currency = models.CharField(max_length=5, unique=True, choices=Customer.CURRENCY_CHOICES)
+    rate = models.DecimalField(max_digits=10, decimal_places=4, help_text="Exchange rate to KSH (e.g. 1 USD = 129 KSH)")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"1 {self.currency} = {self.rate} KSH"
+
+    @classmethod
+    def get_rate(cls, currency_code):
+        if currency_code == 'KSH':
+            return Decimal('1.0')
+        try:
+            return cls.objects.get(currency=currency_code).rate
+        except cls.DoesNotExist:
+            return Decimal('1.0')
+

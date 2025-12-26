@@ -19,11 +19,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls.static import static
-from .views import home, graphs, custom_login_view
+from .views import home, graphs, custom_login_view, update_rates
 
 urlpatterns = [
     path('login/', custom_login_view, name='login'),
     path('', home, name='home'),
+    path('update-rates/', update_rates, name='update_rates'),
     path('graphs/', graphs, name='graphs'),
     path('admin/', admin.site.urls),
 

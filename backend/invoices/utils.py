@@ -20,10 +20,10 @@ def generate_invoice_pdf(invoice):
     styles = getSampleStyleSheet()
     
     # Custom Styles
-    styles.add(ParagraphStyle(name='InvoiceTitle', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor('#9A1D56')))
+    styles.add(ParagraphStyle(name='InvoiceTitle', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor('#9A1D56'), fontName='Helvetica-Bold'))
     styles.add(ParagraphStyle(name='InvoiceHeader', parent=styles['Normal'], fontSize=10, leading=14))
     styles.add(ParagraphStyle(name='InvoiceHeaderRight', parent=styles['Normal'], fontSize=10, leading=14, alignment=2)) # Right align
-    styles.add(ParagraphStyle(name='SectionTitle', parent=styles['Heading3'], fontSize=12, spaceAfter=6))
+    styles.add(ParagraphStyle(name='SectionTitle', parent=styles['Heading3'], fontSize=12, spaceAfter=6, fontName='Helvetica-Bold'))
     
     # 1. Header Section
     logo_path = os.path.join(settings.BASE_DIR, "static", "images", "logo.png")

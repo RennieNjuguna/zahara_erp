@@ -30,13 +30,6 @@ class Expense(models.Model):
         ('GBP', 'British Pound'),
     ]
 
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('paid', 'Paid'),
-    ]
-
     # Basic Information
     name = models.CharField(max_length=200, help_text="Name or description of the expense")
     amount = models.DecimalField(
@@ -69,10 +62,9 @@ class Expense(models.Model):
     due_date = models.DateField(blank=True, null=True, help_text="Due date for payment if applicable")
 
     # Status and Approval
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    approved_by = models.CharField(max_length=100, blank=True, null=True, help_text="Name of person who approved")
-    approved_at = models.DateTimeField(blank=True, null=True)
-    rejection_reason = models.TextField(blank=True, null=True, help_text="Reason if expense was rejected")
+    description = models.TextField(blank=True, null=True, help_text="Detailed description of the expense")
+    date_incurred = models.DateField(default=timezone.now, help_text="Date when the expense was incurred")
+    due_date = models.DateField(blank=True, null=True, help_text="Due date for payment if applicable")
 
     # Payment Information
     payment_method = models.CharField(max_length=100, blank=True, null=True, help_text="How the expense was paid")
@@ -107,13 +99,12 @@ class Expense(models.Model):
         ordering = ['-date_incurred', '-created_at']
         indexes = [
             models.Index(fields=['date_incurred']),
-            models.Index(fields=['status']),
             models.Index(fields=['category']),
             models.Index(fields=['currency']),
         ]
 
     def __str__(self):
-        return f"{self.name} - {self.amount} {self.currency} ({self.get_status_display()})"
+        return f"{self.name} - {self.amount} {self.currency}"
 
     def get_total_with_currency(self):
         """Return formatted amount with currency"""
@@ -121,7 +112,7 @@ class Expense(models.Model):
 
     def is_overdue(self):
         """Check if expense payment is overdue"""
-        if self.due_date and self.status != 'paid':
+        if self.due_date and not self.payment_date:
             return timezone.now().date() > self.due_date
         return False
 

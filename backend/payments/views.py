@@ -472,14 +472,12 @@ def generate_account_statement(request, customer_id):
             end_date = request.POST.get('end_date')
 
             # Check if statement already exists for this month
-            # existing_statement = AccountStatement.objects.filter(
-            #     customer=customer,
-            #     statement_date=statement_date
-            # ).first()
-
-            # if existing_statement:
-            #     messages.warning(request, 'Statement for this month already exists.')
-            #     return redirect('payments:account_statement_detail', statement_id=existing_statement.id)
+            # Check if statement already exists for this month and update/regenerate it
+            # The database has a unique constraint, so we must delete the old one first
+            AccountStatement.objects.filter(
+                customer=customer,
+                statement_date=statement_date
+            ).delete()
 
             # Create new statement
             statement = AccountStatement.objects.create(
@@ -700,10 +698,10 @@ def get_customer_balance(request, customer_id):
 
 @login_required
 def generate_account_statement_pdf(request, statement_id):
-    """Generate PDF for an account statement"""
-    try:
-        statement = get_object_or_404(AccountStatement, id=statement_id)
+    """Generate PDF for an account statement using ReportLab"""
+    statement = get_object_or_404(AccountStatement, id=statement_id)
 
+    try:
         # Generate statement data if not already done
         if statement.opening_balance == 0 and statement.closing_balance == 0:
             statement_data = statement.generate_statement_data()
@@ -726,105 +724,243 @@ def generate_account_statement_pdf(request, statement_id):
                 ),
             }
 
-        # Prepare context for PDF template
-        context = {
-            'statement': statement,
-            'statement_data': statement_data,
-            'logo_path': os.path.join(settings.STATIC_ROOT, 'images', 'logo.png') if hasattr(settings, 'STATIC_ROOT') else None,
-        }
+        # ReportLab PDF Generation
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+        from reportlab.lib.units import cm
+        from io import BytesIO
 
-        # Render HTML template
-        html_string = render_to_string('payments/account_statement_pdf.html', context)
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                rightMargin=1*cm, leftMargin=1*cm,
+                                topMargin=1*cm, bottomMargin=1*cm)
 
-        # Debug: Print HTML length
-        print(f"Generated HTML length: {len(html_string)}")
+        elements = []
+        styles = getSampleStyleSheet()
 
-        # Create PDF using WeasyPrint
-        try:
-            from weasyprint import HTML, CSS
-            from weasyprint.text.fonts import FontConfiguration
+        # Custom Styles
+        styles.add(ParagraphStyle(name='StatementTitle', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor('#9A1D56'), fontName='Helvetica-Bold'))
+        styles.add(ParagraphStyle(name='SectionTitle', parent=styles['Heading3'], fontSize=12, spaceAfter=6, textColor=colors.HexColor('#9A1D56'), fontName='Helvetica-Bold'))
+        styles.add(ParagraphStyle(name='NormalSmall', parent=styles['Normal'], fontSize=9))
+        styles.add(ParagraphStyle(name='TableHeader', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', textColor=colors.white))
+        
+        # 1. Header Section
+        logo_path = os.path.join(settings.BASE_DIR, "static", "images", "logo.png")
+        
+        # Company Info
+        company_info = [
+            [Paragraph("<b>ZAHARA FLOWERS LIMITED</b>", styles['Normal'])],
+            [Paragraph("P.O. Box 12345, Nairobi, Kenya", styles['NormalSmall'])],
+            [Paragraph("Phone: +254 700 000 000", styles['NormalSmall'])],
+            [Paragraph("Email: info@zaharaflowers.com", styles['NormalSmall'])],
+            [Paragraph("Website: www.zaharaflowers.com", styles['NormalSmall'])]
+        ]
+        
+        # Statement Info
+        statement_info = [
+            [Paragraph("<b>ACCOUNT STATEMENT</b>", styles['StatementTitle'])],
+            [Paragraph(f"<b>Statement Date:</b> {statement.statement_date.strftime('%d %b, %Y')}", styles['Normal'])],
+            [Paragraph(f"<b>Period:</b> {statement.start_date.strftime('%d %b, %Y')} - {statement.end_date.strftime('%d %b, %Y')}", styles['Normal'])],
+            [Paragraph(f"<b>Statement #:</b> ST-{statement.id:06d}", styles['Normal'])]
+        ]
 
-            # Configure fonts
-            font_config = FontConfiguration()
+        header_data = [[
+            Image(logo_path, width=2.5*cm, height=2.5*cm) if os.path.exists(logo_path) else "",
+            Table(company_info, style=[('VALIGN', (0,0), (-1,-1), 'TOP')]),
+            Table(statement_info, style=[('VALIGN', (0,0), (-1,-1), 'TOP'), ('ALIGN', (0,0), (-1,-1), 'RIGHT')])
+        ]]
+        
+        header_table = Table(header_data, colWidths=[3*cm, 8*cm, 8*cm])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LINEBELOW', (0,0), (-1,-1), 1, colors.HexColor('#9A1D56')),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 15),
+        ]))
+        elements.append(header_table)
+        elements.append(Spacer(1, 0.5*cm))
 
-            # Create PDF
-            html_doc = HTML(string=html_string)
-            pdf = html_doc.write_pdf(
-                stylesheets=[],
-                font_config=font_config
-            )
+        # 2. Customer & Summary Section
+        currency = statement.customer.preferred_currency
+        
+        customer_details = [
+            [Paragraph("<b>Customer Details</b>", styles['SectionTitle'])],
+            [Paragraph(f"<b>{statement.customer.name}</b>", styles['Normal'])],
+        ]
+        
+        # Add email and phone only if they exist
+        customer_email = getattr(statement.customer, 'email', None)
+        if customer_email:
+            customer_details.append([Paragraph(f"{customer_email}", styles['Normal'])])
+            
+        customer_phone = getattr(statement.customer, 'phone', None)
+        if customer_phone:
+            customer_details.append([Paragraph(f"{customer_phone}", styles['Normal'])])
+            
+        customer_details.append([Paragraph(f"Currency: {currency}", styles['Normal'])])
+        
+        summary_details = [
+            [Paragraph("<b>Summary</b>", styles['SectionTitle'])],
+            [Paragraph(f"Opening Balance: {currency} {statement.opening_balance}", styles['Normal'])],
+            [Paragraph(f"Total Orders: {currency} {statement.total_orders}", styles['Normal'])],
+            [Paragraph(f"Total Credits: {currency} {statement.total_credits}", styles['Normal'])],
+            [Paragraph(f"Total Payments: {currency} {statement.total_payments}", styles['Normal'])],
+            [Paragraph(f"<b>Closing Balance: {currency} {statement.closing_balance}</b>", styles['Normal'])]
+        ]
+        
+        info_table = Table([[Table(customer_details), Table(summary_details)]], colWidths=[9.5*cm, 9.5*cm])
+        info_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ]))
+        elements.append(info_table)
+        elements.append(Spacer(1, 1*cm))
 
-            # Generate filename
-            filename = f"Statement_{statement.customer.name}_{statement.statement_date.strftime('%Y_%m')}.pdf"
-            filename = filename.replace(' ', '_').replace('/', '_')
+        # 3. Transactions (Orders)
+        if statement_data.get('orders'):
+            elements.append(Paragraph("Orders & Invoices", styles['SectionTitle']))
+            
+            data = [[Paragraph('Date', styles['TableHeader']), Paragraph('Invoice #', styles['TableHeader']), 
+                     Paragraph('Status', styles['TableHeader']), Paragraph('Amount', styles['TableHeader'])]]
+            
+            for order in statement_data['orders']:
+                # Determine status color
+                status_color = '#000000' # Default black
+                if order.status == 'paid':
+                    status_color = '#28a745' # Green
+                elif order.status == 'pending':
+                    status_color = '#fd7e14' # Orange
+                elif order.status == 'cancelled':
+                    status_color = '#6c757d' # Grey
+                elif 'claim' in order.status:
+                     status_color = '#dc3545' # Red
 
-            # Create response with inline display instead of attachment
-            response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'inline; filename="{filename}"'
+                data.append([
+                    order.date.strftime('%d %b, %Y'),
+                    order.invoice_code,
+                    Paragraph(f"<font color='{status_color}'>{order.get_status_display()}</font>", styles['NormalSmall']),
+                    f"{order.currency} {order.total_amount}"
+                ])
+                
+            t = Table(data, colWidths=[4*cm, 5*cm, 5*cm, 4*cm])
+            t.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#9A1D56')), # Header bg
+                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                ('ALIGN', (-1,0), (-1,-1), 'RIGHT'), # Right align amounts
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0,0), (-1,0), 9),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+            ]))
+            elements.append(t)
+            elements.append(Spacer(1, 0.5*cm))
 
-            # Update statement with PDF file reference
-            if not statement.pdf_file:
-                # Save PDF to media directory
-                pdf_path = os.path.join('account_statements_pdfs', filename)
-                full_pdf_path = os.path.join(settings.MEDIA_ROOT, pdf_path)
+        # 4. Transactions (Credits)
+        credits = statement_data.get('credits')
+        if statement.include_credits and credits:
+            elements.append(Paragraph("Credits & Adjustments", styles['SectionTitle']))
+            
+            data = [[Paragraph('Date', styles['TableHeader']), Paragraph('Credit Note #', styles['TableHeader']), 
+                     Paragraph('Type', styles['TableHeader']), Paragraph('Amount', styles['TableHeader'])]]
+            
+            for credit in credits:
+                data.append([
+                    credit.created_at.strftime('%d %b, %Y'),
+                    credit.code,
+                    "Credit Note",
+                    f"{credit.currency} {credit.total_amount}"
+                ])
+            
+            t = Table(data, colWidths=[4*cm, 5*cm, 5*cm, 4*cm])
+            t.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#9A1D56')),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                ('ALIGN', (-1,0), (-1,-1), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+            ]))
+            elements.append(t)
+            elements.append(Spacer(1, 0.5*cm))
 
-                # Ensure directory exists
-                os.makedirs(os.path.dirname(full_pdf_path), exist_ok=True)
+        # 5. Transactions (Payments)
+        payments = statement_data.get('payments')
+        if statement.include_payments and payments:
+            elements.append(Paragraph("Payments Received", styles['SectionTitle']))
+            
+            data = [[Paragraph('Date', styles['TableHeader']), Paragraph('Payment #', styles['TableHeader']), 
+                     Paragraph('Method', styles['TableHeader']), Paragraph('Amount', styles['TableHeader'])]]
+            
+            for payment in payments:
+                data.append([
+                    payment.payment_date.strftime('%d %b, %Y'),
+                    Paragraph(str(payment.payment_id), styles['NormalSmall']),
+                    payment.get_payment_method_display(),
+                    f"{payment.currency} {payment.amount}"
+                ])
+                
+            t = Table(data, colWidths=[3.5*cm, 6.5*cm, 4*cm, 4*cm])
+            t.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#9A1D56')),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                ('ALIGN', (-1,0), (-1,-1), 'RIGHT'),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+            ]))
+            elements.append(t)
+            elements.append(Spacer(1, 1*cm))
 
-                with open(full_pdf_path, 'wb') as f:
-                    f.write(pdf)
+        # 6. Reconciliation Summary
+        elements.append(Paragraph("Balance Reconciliation", styles['SectionTitle']))
+        
+        recon_data = [
+            ['Opening Balance', '+ New Orders', '- Credits', '- Payments', '= Closing Balance'],
+            [f"{statement.opening_balance}", f"{statement.total_orders}", f"{statement.total_credits}", f"{statement.total_payments}", f"{statement.closing_balance}"]
+        ]
+        
+        t = Table(recon_data, colWidths=[3.5*cm, 3.5*cm, 3.5*cm, 3.5*cm, 4*cm])
+        t.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('BACKGROUND', (0,0), (-1,0), colors.whitesmoke),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#9A1D56')),
+            ('INNERGRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+            ('TOPPADDING', (0,0), (-1,-1), 10),
+        ]))
+        elements.append(t)
+        
+        # 7. New Balance Highlight
+        elements.append(Spacer(1, 1*cm))
+        elements.append(Paragraph(f"<b>Amount Due: {currency} {statement.closing_balance}</b>", 
+                                ParagraphStyle(name='AmountDue', parent=styles['Heading2'], alignment=1, textColor=colors.HexColor('#9A1D56'))))
 
-                # Update statement model
-                statement.pdf_file = pdf_path
-                statement.save()
+        # Build PDF
+        doc.build(elements)
+        pdf_value = buffer.getvalue()
+        buffer.close()
 
-            return response
+        # Generate filename
+        filename = f"Statement_{statement.customer.name}_{statement.statement_date.strftime('%Y_%m')}.pdf"
+        filename = filename.replace(' ', '_').replace('/', '_')
 
-        except ImportError as e:
-            # Fallback if WeasyPrint is not available
-            messages.error(request, f'PDF generation requires WeasyPrint. Error: {str(e)}')
-            return redirect('payments:account_statement_detail', statement_id=statement.id)
-        except Exception as e:
-            # Log the specific error
-            print(f"WeasyPrint error: {str(e)}")
-            messages.error(request, f'Error generating PDF with WeasyPrint: {str(e)}')
+        # Save to file system
+        if not statement.pdf_file:
+            pdf_path = os.path.join('account_statements_pdfs', filename)
+            full_pdf_path = os.path.join(settings.MEDIA_ROOT, pdf_path)
+            os.makedirs(os.path.dirname(full_pdf_path), exist_ok=True)
+            with open(full_pdf_path, 'wb') as f:
+                f.write(pdf_value)
+            statement.pdf_file = pdf_path
+            statement.save()
 
-            # Try fallback with reportlab
-            try:
-                from reportlab.pdfgen import canvas
-                from reportlab.lib.pagesizes import letter
-                from io import BytesIO
-
-                # Create a simple PDF with reportlab
-                buffer = BytesIO()
-                p = canvas.Canvas(buffer, pagesize=letter)
-
-                # Add content
-                p.setFont("Helvetica-Bold", 16)
-                p.drawString(100, 750, f"Account Statement - {statement.customer.name}")
-
-                p.setFont("Helvetica", 12)
-                p.drawString(100, 720, f"Statement Date: {statement.statement_date.strftime('%B %d, %Y')}")
-                p.drawString(100, 700, f"Period: {statement.start_date.strftime('%B %d, %Y')} - {statement.end_date.strftime('%B %d, %Y')}")
-                p.drawString(100, 680, f"Opening Balance: {statement.opening_balance} {statement.customer.preferred_currency}")
-                p.drawString(100, 660, f"Closing Balance: {statement.closing_balance} {statement.customer.preferred_currency}")
-
-                p.showPage()
-                p.save()
-
-                # Get PDF content
-                pdf_content = buffer.getvalue()
-                buffer.close()
-
-                # Create response
-                response = HttpResponse(pdf_content, content_type='application/pdf')
-                response['Content-Disposition'] = f'inline; filename="Statement_{statement.customer.name}_{statement.statement_date.strftime("%Y_%m")}.pdf"'
-                return response
-
-            except Exception as reportlab_error:
-                print(f"ReportLab fallback also failed: {str(reportlab_error)}")
-                messages.error(request, f'Both PDF generation methods failed. Please check the console for errors.')
-                return redirect('payments:account_statement_detail', statement_id=statement.id)
+        # Return response
+        response = HttpResponse(pdf_value, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
 
     except Exception as e:
         messages.error(request, f'Error generating PDF: {str(e)}')
@@ -985,6 +1121,12 @@ def generate_custom_statement(request):
                 if first_order:
                     statement.start_date = first_order.date
                     statement.end_date = datetime.now().date()  # Today's date
+
+            # Prevent IntegrityError by removing existing conflicting statements
+            AccountStatement.objects.filter(
+                customer=statement.customer,
+                statement_date=statement.statement_date
+            ).delete()
 
             statement.save()
 

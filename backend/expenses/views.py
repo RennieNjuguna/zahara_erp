@@ -11,7 +11,6 @@ def expense_list(request):
     """Display list of all expenses with search and filtering"""
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
-    status_filter = request.GET.get('status', '')
     currency_filter = request.GET.get('currency', '')
 
     expenses = Expense.objects.select_related('category').prefetch_related('attachments').all()
@@ -28,16 +27,12 @@ def expense_list(request):
     if category_filter:
         expenses = expenses.filter(category_id=category_filter)
 
-    if status_filter:
-        expenses = expenses.filter(status=status_filter)
-
     if currency_filter:
         expenses = expenses.filter(currency=currency_filter)
 
     # Get filter options
     categories = ExpenseCategory.objects.filter(is_active=True).order_by('name')
     currencies = Expense.CURRENCY_CHOICES
-    statuses = Expense.STATUS_CHOICES
 
     # Calculate totals by currency
     totals_by_currency = {}
@@ -56,11 +51,9 @@ def expense_list(request):
         'page_obj': page_obj,
         'search_query': search_query,
         'category_filter': category_filter,
-        'status_filter': status_filter,
         'currency_filter': currency_filter,
         'categories': categories,
         'currencies': currencies,
-        'statuses': statuses,
         'totals_by_currency': totals_by_currency,
         'total_expenses': expenses.count(),
     }
