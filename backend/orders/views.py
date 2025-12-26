@@ -6,6 +6,7 @@ from .models import CustomerOrderDefaults, Order
 from customers.models import Customer, Branch
 from products.models import Product
 from django.contrib import messages
+from django.db.models import Sum
 from decimal import Decimal
 
 
@@ -50,9 +51,21 @@ def order_list(request):
 def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     products = Product.objects.all().order_by('name')
+    
+    # Get associated credit notes
+    from invoices.models import CreditNote, CreditNoteItem
+    credit_notes = CreditNote.objects.filter(items__order_item__order=order).distinct()
+    
+    total_credits = CreditNoteItem.objects.filter(
+        order_item__order=order,
+        credit_note__status='approved'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    
     return render(request, 'orders/order_detail.html', {
         'order': order,
         'products': products,
+        'credit_notes': credit_notes,
+        'total_credits': total_credits,
     })
 
 
@@ -89,17 +102,22 @@ def order_create(request):
                     pid = (pid or '').strip()
                     if not pid:
                         continue
-                    try:
-                        order.items.create(
-                            product_id=int(pid),
-                            stem_length_cm=int(stem_lengths[idx] or 0),
-                            boxes=int(boxes_list[idx] or 0),
-                            stems_per_box=int(stems_per_box_list[idx] or 0),
-                            price_per_stem=Decimal(price_list[idx] or '0'),
-                        )
-                    except Exception:
-                        # Skip malformed rows without aborting order creation
-                        continue
+                    if not pid.isdigit():
+                         continue
+                    
+                    # Clean input values
+                    sl = stem_lengths[idx].strip() if idx < len(stem_lengths) else '0'
+                    bx = boxes_list[idx].strip() if idx < len(boxes_list) else '0'
+                    spb = stems_per_box_list[idx].strip() if idx < len(stems_per_box_list) else '0'
+                    pps = price_list[idx].strip() if idx < len(price_list) else '0'
+
+                    order.items.create(
+                        product_id=int(pid),
+                        stem_length_cm=int(sl) if sl else 0,
+                        boxes=int(bx) if bx else 0,
+                        stems_per_box=int(spb) if spb else 0,
+                        price_per_stem=Decimal(pps) if pps else Decimal('0'),
+                    )
 
             # Recalculate totals and trigger invoice regeneration via Order post_save signal
             order.save()
@@ -146,17 +164,22 @@ def order_edit(request, order_id):
                     pid = (pid or '').strip()
                     if not pid:
                         continue
-                    try:
-                        order.items.create(
-                            product_id=int(pid),
-                            stem_length_cm=int(stem_lengths[idx] or 0),
-                            boxes=int(boxes_list[idx] or 0),
-                            stems_per_box=int(stems_per_box_list[idx] or 0),
-                            price_per_stem=Decimal(price_list[idx] or '0'),
-                        )
-                    except Exception:
-                        # Skip malformed rows without aborting order update
+                    if not pid.isdigit():
                         continue
+
+                    # Clean input values
+                    sl = stem_lengths[idx].strip() if idx < len(stem_lengths) else '0'
+                    bx = boxes_list[idx].strip() if idx < len(boxes_list) else '0'
+                    spb = stems_per_box_list[idx].strip() if idx < len(stems_per_box_list) else '0'
+                    pps = price_list[idx].strip() if idx < len(price_list) else '0'
+
+                    order.items.create(
+                        product_id=int(pid),
+                        stem_length_cm=int(sl) if sl else 0,
+                        boxes=int(bx) if bx else 0,
+                        stems_per_box=int(spb) if spb else 0,
+                        price_per_stem=Decimal(pps) if pps else Decimal('0'),
+                    )
 
             order.save()
             messages.success(request, 'Order updated.')

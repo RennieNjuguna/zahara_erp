@@ -186,9 +186,9 @@ class CustomerBalance(models.Model):
 
         # Get all credit notes for customer
         total_credits = CreditNote.objects.filter(
-            order__customer=self.customer
+            customer=self.customer
         ).aggregate(
-            total=Sum('credit_note_items__credit_amount')
+            total=Sum('items__amount')
         )['total'] or Decimal('0.00')
 
         # Get all payments for customer
@@ -284,12 +284,12 @@ class AccountStatement(models.Model):
 
         # Get credits in period
         credits_in_period = CreditNote.objects.filter(
-            order__customer=self.customer,
+            customer=self.customer,
             created_at__date__gte=self.start_date,
             created_at__date__lte=self.end_date
         )
         total_credits = credits_in_period.aggregate(
-            total=Sum('credit_note_items__credit_amount')
+            total=Sum('items__amount')
         )['total'] or Decimal('0.00')
 
         # Get payments in period - include all active payments (completed, pending, but not cancelled/refunded)
@@ -364,12 +364,12 @@ class AccountStatement(models.Model):
         # Include credits if requested
         if self.include_credits:
             credits_in_period = CreditNote.objects.filter(
-                order__customer=self.customer,
+                customer=self.customer,
                 created_at__date__gte=self.start_date,
                 created_at__date__lte=self.end_date
             )
             total_credits = credits_in_period.aggregate(
-                total=Sum('credit_note_items__credit_amount')
+                total=Sum('items__amount')
             )['total'] or Decimal('0.00')
 
         # Include payments if requested
@@ -460,12 +460,12 @@ class AccountStatement(models.Model):
         # Include credits if requested
         if self.include_credits:
             credits_in_period = CreditNote.objects.filter(
-                order__customer=self.customer,
+                customer=self.customer,
                 created_at__date__gte=start_date,
                 created_at__date__lte=self.end_date
             )
             total_credits = credits_in_period.aggregate(
-                total=Sum('credit_note_items__credit_amount')
+                total=Sum('items__amount')
             )['total'] or Decimal('0.00')
 
         # Include payments if requested
@@ -553,10 +553,10 @@ class AccountStatement(models.Model):
 
         # Credits before date
         credits_before = CreditNote.objects.filter(
-            order__customer=self.customer,
+            customer=self.customer,
             created_at__date__lt=target_date
         ).aggregate(
-            total=Sum('credit_note_items__credit_amount')
+            total=Sum('items__amount')
         )['total'] or Decimal('0.00')
 
         # Payments before date - include all active payments (completed, pending, but not cancelled/refunded)

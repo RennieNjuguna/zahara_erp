@@ -1,275 +1,63 @@
-{% extends 'base.html' %}
-
-{% block title %}Credit Notes - Zahara ERP{% endblock %}
-
-{% block extra_css %}
-<style>
-  .table tbody tr:hover {
-    background-color: #f8f9fa !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  .table td {
-    padding: 1rem 0.75rem;
-    vertical-align: middle;
-  }
-
-  .status-badge {
-    padding: 0.5rem 1rem !important;
-    border-radius: 20px !important;
-    font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    display: inline-block !important;
-    text-align: center !important;
-    min-width: 80px !important;
-  }
-
-  .status-pending {
-    background-color: #FFF3CD !important;
-    color: #856404 !important;
-    border: 1px solid #FFEAA7 !important;
-  }
-
-  .status-applied {
-    background-color: #D1ECF1 !important;
-    color: #0C5460 !important;
-    border: 1px solid #A7E8F0 !important;
-  }
-
-  .status-cancelled {
-    background-color: #F8D7DA !important;
-    color: #721C24 !important;
-    border: 1px solid #F5C6CB !important;
-  }
-
-  .action-buttons {
-    display: flex !important;
-    gap: 0.5rem !important;
-    flex-wrap: wrap !important;
-    justify-content: flex-end !important;
-  }
-
-  .action-btn {
-    padding: 0.25rem 0.5rem !important;
-    border-radius: 0.25rem !important;
-    border: none !important;
-    font-size: 0.8rem !important;
-    transition: all 0.2s ease !important;
-  }
-
-  .action-btn:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-  }
-
-
-</style>
-{% endblock %}
-
-{% block content %}
-<!-- Dashboard Header -->
-<div class="dashboard-header">
-  <div class="row align-items-center">
-    <div class="col-md-8">
-      <h1>Credit Notes Management</h1>
-      <p>Manage credit notes, track customer credits, and monitor refunds.</p>
-    </div>
-    <div class="col-md-4 text-end">
-      <div class="view-buttons">
-        <a href="{% url 'invoices:credit_note_create' %}" class="view-btn">
-          <i class="bi bi-plus-circle me-2"></i>Create Credit Note
-        </a>
-        <a href="#" class="view-btn">
-          <i class="bi bi-download me-2"></i>Export
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Quick Stats -->
+{% extends 'base.html' %} {% block content %}
 <div class="row mb-4">
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-value">{{ credit_notes|length|default:0 }}</div>
-      <div class="metric-label">Total Credit Notes</div>
-      <div class="metric-change up">
-        <i class="bi bi-receipt-cutoff me-2"></i>All Time
-      </div>
-    </div>
+  <div class="col-md-8">
+    <h2>Credit Notes</h2>
   </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-value">{{ credit_notes|dictsort:"status"|length|default:0 }}</div>
-      <div class="metric-label">Pending</div>
-      <div class="metric-change up">
-        <i class="bi bi-clock me-2"></i>Awaiting
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-value">{{ credit_notes|dictsort:"status"|length|default:0 }}</div>
-      <div class="metric-label">Applied</div>
-      <div class="metric-change up">
-        <i class="bi bi-check-circle me-2"></i>Processed
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3 mb-3">
-    <div class="metric-card">
-      <div class="metric-value">{{ total_credits|floatformat:2|default:"0.00" }} KES</div>
-      <div class="metric-label">Total Credits</div>
-      <div class="metric-change up">
-        <i class="bi bi-currency-dollar me-2"></i>Amount
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Filters and Search -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="data-card">
-      <h5 class="card-title">Filters & Search</h5>
-      <p class="card-subtitle">Refine your credit notes list</p>
-
-      <form method="get" class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Customer</label>
-          {{ search_form.customer }}
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label">Order</label>
-          {{ search_form.order }}
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label">Status</label>
-          {{ search_form.status }}
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label">Credit Type</label>
-          {{ search_form.credit_type }}
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label">From Date</label>
-          {{ search_form.date_from }}
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label">To Date</label>
-          {{ search_form.date_to }}
-        </div>
-
-        <div class="col-md-2 d-flex align-items-end">
-          <button type="submit" class="btn w-100" style="background-color: var(--accent-magenta); color: white; border: none;">
-            <i class="bi bi-search me-2"></i>Filter
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Credit Notes List -->
-{% if credit_notes %}
-  {% for credit_note in credit_notes %}
-    <div class="metric-card mb-3">
-      <div class="row">
-        <div class="col-md-3">
-          <h6 class="mb-1">
-            <a href="{% url 'invoices:credit_note_detail' credit_note.id %}" class="text-decoration-none">
-              {{ credit_note.code }}
-            </a>
-          </h6>
-          <small class="text-muted">{{ credit_note.created_at|date:"M d, Y" }}</small>
-        </div>
-
-        <div class="col-md-3">
-          <strong>Order:</strong> {{ credit_note.order.invoice_code }}<br>
-          <small class="text-muted">{{ credit_note.order.customer.name }}</small>
-        </div>
-
-        <div class="col-md-2">
-          <span class="status-badge status-{{ credit_note.status }}">
-            {{ credit_note.get_status_display }}
-          </span>
-        </div>
-
-        <div class="col-md-2">
-          <strong>{{ credit_note.total_credit_amount|floatformat:2 }} KES</strong><br>
-          <small class="text-muted">{{ credit_note.get_credit_type_display }}</small>
-        </div>
-
-        <div class="col-md-2">
-          <div class="d-flex gap-2">
-            <a href="{% url 'invoices:credit_note_detail' credit_note.id %}" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-eye"></i>
-            </a>
-            <a href="{% url 'invoices:credit_note_edit' credit_note.id %}" class="btn btn-sm btn-outline-warning">
-              <i class="bi bi-pencil"></i>
-            </a>
-            {% if credit_note.status == 'pending' %}
-              <a href="{% url 'invoices:credit_note_cancel' credit_note.id %}" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-x-circle"></i>
-              </a>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  {% endfor %}
-
-  <!-- Pagination -->
-  {% if credit_notes.has_other_pages %}
-    <nav aria-label="Credit notes pagination" class="mt-4">
-      <ul class="pagination justify-content-center">
-        {% if credit_notes.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ credit_notes.previous_page_number }}">Previous</a>
-          </li>
-        {% endif %}
-
-        {% for num in credit_notes.paginator.page_range %}
-          {% if credit_notes.number == num %}
-            <li class="page-item active">
-              <span class="page-link">{{ num }}</span>
-            </li>
-          {% elif num > credit_notes.number|add:'-3' and num < credit_notes.number|add:'3' %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-            </li>
-          {% endif %}
-        {% endfor %}
-
-        {% if credit_notes.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ credit_notes.next_page_number }}">Next</a>
-          </li>
-        {% endif %}
-      </ul>
-    </nav>
-  {% endif %}
-
-{% else %}
-  <!-- Empty State -->
-  <div class="text-center py-5">
-    <i class="bi bi-receipt-cutoff" style="font-size: 4rem; color: #ccc;"></i>
-    <h4 class="mt-3 text-muted">No Credit Notes Found</h4>
-    <p class="text-muted">Create your first credit note to get started.</p>
-    <a href="{% url 'invoices:credit_note_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-2"></i>Create Credit Note
+  <div class="col-md-4 text-end">
+    <a
+      href="{% url 'invoices:credit_note_create_step1' %}"
+      class="btn btn-primary"
+    >
+      <i class="bi bi-plus-lg"></i> Create Credit Note
     </a>
   </div>
-{% endif %}
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Code</th>
+          <th>Customer</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th class="text-end">Total Amount</th>
+          <th>Created By</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for credit_note in credit_notes %}
+        <tr
+          onclick="window.location='{% url 'invoices:credit_note_detail' credit_note.id %}'"
+          style="cursor: pointer"
+        >
+          <td>{{ credit_note.code }}</td>
+          <td>{{ credit_note.customer.name }}</td>
+          <td>{{ credit_note.created_at|date:"M d, Y" }}</td>
+          <td>
+            {% if credit_note.status == 'approved' %}
+            <span class="badge bg-success">Approved</span>
+            {% elif credit_note.status == 'cancelled' %}
+            <span class="badge bg-danger">Cancelled</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">Pending</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {{ credit_note.currency }} {{ credit_note.total_amount|floatformat:2 }}
+          </td>
+          <td>{{ credit_note.created_by.username|default:"System" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            No credit notes found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
