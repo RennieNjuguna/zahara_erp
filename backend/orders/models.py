@@ -126,8 +126,11 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('paid', 'Paid'),
-        ('claim', 'Claim (Bad Produce)'),
         ('cancelled', 'Cancelled'),
+    ]
+    CLAIM_STATUS_CHOICES = [
+        ('partial_claim', 'Partial Claim'),
+        ('full_claim', 'Full Claim'),
     ]
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='orders')
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
@@ -137,6 +140,7 @@ class Order(models.Model):
     date = models.DateField(default=timezone.now)
     remarks = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    claim_status = models.CharField(max_length=20, choices=CLAIM_STATUS_CHOICES, blank=True, null=True)
     status_reason = models.CharField(max_length=255, blank=True, null=True)
 
     # Logistics fields
@@ -167,12 +171,46 @@ class Order(models.Model):
             ).count() + 1
             self.invoice_code = f"{short_code}{str(existing_orders).zfill(3)}"
 
-        # Update status based on payment allocations if status is pending
-        if self.status == 'pending' and self.pk:
-            if self.is_paid():
-                self.status = 'paid'
+        # Update status based on payment allocations if status is pending or partial
+        if self.pk and self.status not in ['cancelled', 'full_claim']:
+            self.update_status_from_credit_note()
 
         super().save(*args, **kwargs)
+
+    def update_status_from_credit_note(self):
+        """Update status based on credits and payments"""
+        if self.status == 'cancelled':
+            return
+
+        # Get total credits
+        from invoices.models import CreditNoteItem
+        total_credits = CreditNoteItem.objects.filter(
+            order_item__order=self,
+            credit_note__status='approved'
+        ).aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        # Get total payments
+        total_payments = self.new_payment_allocations.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+        
+        total_settled = total_credits + total_payments
+        
+        if total_credits > 0:
+            if total_credits >= self.total_amount:
+                self.claim_status = 'full_claim'
+            else:
+                self.claim_status = 'partial_claim'
+        else:
+             self.claim_status = None
+
+        if total_settled >= self.total_amount:
+            self.status = 'paid'
+        
+        # Note: We don't save() here to allow caller to handle save (avoid recursion)
+        return self.status
 
     def is_paid(self):
         """Check if the order is fully paid"""
@@ -185,11 +223,13 @@ class Order(models.Model):
         )['total'] or Decimal('0.00')
 
         # Get total credits for this order
-        from invoices.models import CreditNote
-        total_credits = CreditNote.objects.filter(
-            order=self
+        # Redesigned: Sum up all approved CreditNoteItems linked to this order's items
+        from invoices.models import CreditNoteItem
+        total_credits = CreditNoteItem.objects.filter(
+            order_item__order=self,
+            credit_note__status='approved'
         ).aggregate(
-            total=Sum('credit_note_items__credit_amount')
+            total=Sum('amount')
         )['total'] or Decimal('0.00')
 
         # Order is paid if payments + credits >= total amount
@@ -198,11 +238,12 @@ class Order(models.Model):
     def outstanding_amount(self):
         """Calculate outstanding amount for this order"""
         # Get total credits for this order
-        from invoices.models import CreditNote
-        total_credits = CreditNote.objects.filter(
-            order=self
+        from invoices.models import CreditNoteItem
+        total_credits = CreditNoteItem.objects.filter(
+            order_item__order=self,
+            credit_note__status='approved'
         ).aggregate(
-            total=Sum('credit_note_items__credit_amount')
+            total=Sum('amount')
         )['total'] or Decimal('0.00')
 
         # Outstanding amount is total amount minus payments and credits
@@ -253,9 +294,11 @@ class Order(models.Model):
         from invoices.models import CreditNote, CreditNoteItem
 
         credit_note = CreditNote.objects.create(
-            order=self,
-            title=f"Credit Note for {self.invoice_code}",
-            reason=reason
+            customer=self.customer,
+            status='pending', # Review needed before approval
+            reason=f"Claim for Order {self.invoice_code}: {reason}",
+            created_by=None # System created
+            # code and currency auto-set
         )
 
         # Create credit note items for all order items
@@ -263,11 +306,19 @@ class Order(models.Model):
             CreditNoteItem.objects.create(
                 credit_note=credit_note,
                 order_item=item,
-                stems_affected=item.stems
+                stems=item.stems,
+                amount=item.total_amount,
+                reason=reason
             )
+        
+        # Approve immediately? Or leave pending?
+        # Requirement says "Create credit note". Let's auto-approve for claims to maintain old behavior if possible,
+        # but safely defaulting to pending is better for "Redesign".
+        # However, to affect the balance immediately as per old logic:
+        credit_note.approve()
 
         # Update order status
-        self.status = 'claim'
+        self.claim_status = 'full_claim' # Legacy "claim" maps to full claim logic roughly
         self.status_reason = reason
         self.save()
 

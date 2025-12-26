@@ -4,20 +4,14 @@ from . import views
 app_name = 'invoices'
 
 urlpatterns = [
-    # Credit Note URLs (must come before generic invoice pattern)
+    # Credit Note URLs
     path('credit-notes/', views.credit_note_list, name='credit_note_list'),
-    path('credit-notes/create/', views.credit_note_create, name='credit_note_create'),
-    path('credit-notes/bulk-create/', views.bulk_credit_note_create, name='bulk_credit_note_create'),
+    path('credit-notes/create/step1/', views.credit_note_create_step1, name='credit_note_create_step1'),
+    path('credit-notes/create/step2/', views.credit_note_create_step2, name='credit_note_create_step2'),
+    path('credit-notes/create/step3/', views.credit_note_create_step3, name='credit_note_create_step3'),
     path('credit-notes/<int:credit_note_id>/', views.credit_note_detail, name='credit_note_detail'),
-    path('credit-notes/<int:credit_note_id>/edit/', views.credit_note_edit, name='credit_note_edit'),
-    path('credit-notes/<int:credit_note_id>/cancel/', views.credit_note_cancel, name='credit_note_cancel'),
-    path('credit-notes/<int:credit_note_id>/add-items/', views.credit_note_add_items, name='credit_note_add_items'),
-    path('credit-notes/<int:credit_note_id>/export/', views.credit_note_export, name='credit_note_export'),
+    path('credit-notes/<int:credit_note_id>/approve/', views.credit_note_approve, name='credit_note_approve'),
 
-    # AJAX endpoints
-    path('ajax/order-items/', views.get_order_items_ajax, name='get_order_items_ajax'),
-    path('ajax/customer-orders/', views.get_customer_orders_ajax, name='get_customer_orders_ajax'),
-
-    # Invoice URLs (must come after more specific patterns)
+    # Invoice URLs
     path('<str:invoice_code>/', views.invoice_detail, name='invoice_detail'),
 ]

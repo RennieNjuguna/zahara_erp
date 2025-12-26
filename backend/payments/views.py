@@ -438,7 +438,7 @@ def account_statement_detail(request, statement_id):
                 date__lte=statement.end_date
             ),
             'credits': CreditNote.objects.filter(
-                order__customer=statement.customer,
+                customer=statement.customer,
                 created_at__date__gte=statement.start_date,
                 created_at__date__lte=statement.end_date
             ),
@@ -449,6 +449,8 @@ def account_statement_detail(request, statement_id):
                 status='completed'
             ),
         }
+
+
 
     context = {
         'statement': statement,
@@ -470,14 +472,14 @@ def generate_account_statement(request, customer_id):
             end_date = request.POST.get('end_date')
 
             # Check if statement already exists for this month
-            existing_statement = AccountStatement.objects.filter(
-                customer=customer,
-                statement_date=statement_date
-            ).first()
+            # existing_statement = AccountStatement.objects.filter(
+            #     customer=customer,
+            #     statement_date=statement_date
+            # ).first()
 
-            if existing_statement:
-                messages.warning(request, 'Statement for this month already exists.')
-                return redirect('payments:account_statement_detail', statement_id=existing_statement.id)
+            # if existing_statement:
+            #     messages.warning(request, 'Statement for this month already exists.')
+            #     return redirect('payments:account_statement_detail', statement_id=existing_statement.id)
 
             # Create new statement
             statement = AccountStatement.objects.create(
@@ -712,7 +714,7 @@ def generate_account_statement_pdf(request, statement_id):
                     date__lte=statement.end_date
                 ),
                 'credits': CreditNote.objects.filter(
-                    order__customer=statement.customer,
+                    customer=statement.customer,
                     created_at__date__gte=statement.start_date,
                     created_at__date__lte=statement.end_date
                 ),
@@ -900,7 +902,7 @@ def test_html_preview(request, statement_id):
                     date__lte=statement.end_date
                 ),
                 'credits': CreditNote.objects.filter(
-                    order__customer=statement.customer,
+                    customer=statement.customer,
                     created_at__date__gte=statement.start_date,
                     created_at__date__lte=statement.end_date
                 ),

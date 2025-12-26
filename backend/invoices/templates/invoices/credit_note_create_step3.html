@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <form method="post" id="creditItemsForm">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">Create Credit Note - Step 3/3</h4>
+                        <small class="text-muted">Select Items and Quantities</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fs-5 fw-bold text-primary">Total Credit: {{ items_with_forms.0.0.order.currency }} <span id="masterTotal">0.00</span></div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
+                                    <th>Product</th>
+                                    <th>Order</th>
+                                    <th>Stem Length</th>
+                                    <th class="text-end">Ordered Stems</th>
+                                    <th class="text-end">Price</th>
+                                    <th style="width: 150px;">Credit Stems</th>
+                                    <th style="width: 150px;">Credit Amount</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item, form in items_with_forms %}
+                                <tr class="item-row {% if item.order_item_credited %}table-warning{% endif %}">
+                                    <td>
+                                        {{ form.selected }}
+                                        {{ form.id }} <!-- Hidden ID field if needed, but here we construct fresh -->
+                                    </td>
+                                    <td>
+                                        <span class="fw-medium">{{ item.product.name }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ item.order.invoice_code }}</span>
+                                    </td>
+                                    <td>{{ item.stem_length_cm }}cm</td>
+                                    <td class="text-end">{{ item.stems }}</td>
+                                    <td class="text-end" data-price="{{ item.price_per_stem }}">
+                                        {{ item.order.currency }} {{ item.price_per_stem }}
+                                    </td>
+                                    <td>
+                                        {{ form.stems }}
+                                    </td>
+                                    <td>
+                                        {{ form.amount }}
+                                    </td>
+                                    <td>
+                                        {{ form.reason }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white p-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Global Reason (for entire Credit Note)</label>
+                            <input type="text" name="global_reason" class="form-control" placeholder="e.g. Broken during shipping" required>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end justify-content-end gap-2">
+                            <a href="{% url 'invoices:credit_note_create_step2' %}" class="btn btn-outline-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Create Credit Note</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('.item-row');
+    const masterTotalEl = document.getElementById('masterTotal');
+
+    function updateRow(row) {
+        const checkbox = row.querySelector('.item-select');
+        const stemsInput = row.querySelector('.stems-input');
+        const amountInput = row.querySelector('.amount-input');
+        const price = parseFloat(row.querySelector('[data-price]').dataset.price);
+        
+        // When stems change, update amount
+        const stems = parseFloat(stemsInput.value) || 0;
+        const amount = stems * price;
+        amountInput.value = amount.toFixed(2);
+        
+        // Auto-select if value entered
+        if (stems > 0) {
+            checkbox.checked = true;
+        }
+        
+        updateTotal();
+    }
+
+    function updateTotal() {
+        let total = 0;
+        rows.forEach(row => {
+            if (row.querySelector('.item-select').checked) {
+                total += parseFloat(row.querySelector('.amount-input').value) || 0;
+            }
+        });
+        masterTotalEl.textContent = total.toFixed(2);
+    }
+
+    rows.forEach(row => {
+        const stemsInput = row.querySelector('.stems-input');
+        stemsInput.addEventListener('input', () => updateRow(row));
+        
+        const checkbox = row.querySelector('.item-select');
+        checkbox.addEventListener('change', updateTotal);
+    });
+    
+    // Select All
+    document.getElementById('selectAll').addEventListener('change', function(e) {
+        document.querySelectorAll('.item-select').forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+        updateTotal();
+    });
+});
+</script>
+{% endblock %}

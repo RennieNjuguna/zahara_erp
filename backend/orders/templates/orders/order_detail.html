@@ -24,6 +24,9 @@
         <hr>
         <div class="d-flex justify-content-between"><span class="text-muted">Date</span><span>{{ order.date|date:'Y-m-d' }}</span></div>
         <div class="d-flex justify-content-between"><span class="text-muted">Status</span><span>{{ order.get_status_display }}</span></div>
+        {% if order.claim_status %}
+        <div class="d-flex justify-content-between"><span class="text-muted">Claim Status</span><span class="badg bg-warning text-dark">{{ order.get_claim_status_display }}</span></div>
+        {% endif %}
         <div class="d-flex justify-content-between"><span class="text-muted">Currency</span><span>{{ order.currency }}</span></div>
         <div class="d-flex justify-content-between"><span class="text-muted">Total</span><strong>{{ order.total_amount }}</strong></div>
       </div>
@@ -96,13 +99,72 @@
   </div>
 </div>
 
+{% if credit_notes %}
+<div class="card shadow-sm mt-4 border-danger">
+  <div class="card-header bg-danger text-white">
+    <h5 class="card-title mb-0">Credit Note Adjustments</h5>
+  </div>
+  <div class="card-body">
+    {% for cn in credit_notes %}
+      <div class="mb-3">
+        <div class="d-flex justify-content-between">
+            <strong><a href="{% url 'invoices:credit_note_detail' cn.id %}" class="text-danger">{{ cn.code }}</a></strong>
+            <span>{{ cn.created_at|date:"Y-m-d" }} <span class="badge {% if cn.status == 'approved' %}bg-success{% else %}bg-warning{% endif %}">{{ cn.status|title }}</span></span>
+        </div>
+        <table class="table table-sm table-bordered mt-1">
+           <thead class="table-light"><tr><th>Product</th><th class="text-center">Stems Credited</th><th class="text-end">Amount</th><th>Reason</th></tr></thead>
+           <tbody>
+             {% for item in cn.items.all %}
+                {% if item.order_item.order == order %}
+                <tr>
+                  <td>{{ item.order_item.product.name }}</td>
+                  <td class="text-center">{{ item.stems }}</td>
+                  <td class="text-end">{{ item.amount }}</td>
+                  <td>{{ item.reason }}</td>
+                </tr>
+                {% endif %}
+             {% endfor %}
+           </tbody>
+        </table>
+      </div>
+    {% endfor %}
+    
+    <div class="row text-end mt-3 pt-2 border-top">
+       <div class="col-md-6 offset-md-6">
+          <div class="d-flex justify-content-between mb-1">
+              <span>Order Total:</span>
+              <span>{{ order.currency }} {{ order.total_amount }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1 text-danger">
+              <span>Less Total Credits:</span>
+              <span>- {{ order.currency }} {{ total_credits|floatformat:2 }}</span>
+          </div>
+          <div class="d-flex justify-content-between fw-bold fs-5 mt-2">
+              <span>Net Payable:</span>
+              <span>{{ order.currency }} {{ order.outstanding_amount }}</span>
+          </div>
+       </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <script>
 document.getElementById('product-select').addEventListener('change', function(){
   const productId = this.value; if(!productId) return;
   const customerId = {{ order.customer.id }};
-  const form = new FormData(); form.append('customer_id', customerId); form.append('product_id', productId);
+  const form = new FormData(); 
+  form.append('customer_id', customerId); 
+  form.append('product_id', productId);
+  
   fetch('/orders/get-defaults/', { method:'POST', body: form })
-    .then(r=>r.json()).then(d=>{ if(d.success){ if(d.stem_length_cm){ document.getElementById('stem-length').value=d.stem_length_cm; } if(d.price_per_stem){ document.getElementById('price-per-stem').value=d.price_per_stem; } } });
+    .then(r=>r.json())
+    .then(d=>{ 
+        if(d.success){ 
+            if(d.stem_length_cm){ document.getElementById('stem-length').value=d.stem_length_cm; } 
+            if(d.price_per_stem){ document.getElementById('price-per-stem').value=d.price_per_stem; } 
+        } 
+    });
 });
 </script>
 {% endblock %}

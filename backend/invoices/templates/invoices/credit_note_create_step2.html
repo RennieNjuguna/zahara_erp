@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h4 class="mb-0">Create Credit Note - Step 2/3</h4>
+                <small class="text-muted">Select Orders for {{ customer.name }}</small>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.orders.field.queryset.exists %}
+                        <div class="mb-4">
+                            <label class="form-label">Select Orders to Credit</label>
+                            <div class="list-group">
+                            {% for order in form.orders.field.queryset %}
+                                <label class="list-group-item d-flex gap-3 align-items-center">
+                                    <input class="form-check-input flex-shrink-0" type="checkbox" name="orders" value="{{ order.id }}" style="font-size: 1.375em;">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <div>
+                                            <h6 class="mb-0">{{ order.invoice_code }}</h6>
+                                            <small class="text-muted">{{ order.date }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge {% if order.status == 'paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ order.status|title }}</span>
+                                            <div class="fw-bold">{{ order.currency }} {{ order.total_amount }}</div>
+                                        </div>
+                                    </div>
+                                </label>
+                            {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'invoices:credit_note_create_step1' %}" class="btn btn-outline-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Next: Select Items</button>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No recent orders found for this customer.
+                        </div>
+                        <a href="{% url 'invoices:credit_note_create_step1' %}" class="btn btn-outline-secondary">Back</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
