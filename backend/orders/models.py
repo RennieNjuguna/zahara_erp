@@ -404,3 +404,59 @@ class CustomerOrderDefaults(models.Model):
             }
         except cls.DoesNotExist:
             return None
+
+
+class MissedSale(models.Model):
+    """
+    Tracks orders that could not be fulfilled due to stock shortages or other reasons.
+    """
+    REASON_CHOICES = [
+        ('out_of_stock', 'Out of Stock'),
+        ('not_in_production', 'Not in Production'),
+        ('other', 'Other'),
+    ]
+
+    date = models.DateField(default=timezone.now, help_text="Date of the missed sale request")
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='missed_sales')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='missed_sales')
+    
+    stem_length_cm = models.PositiveIntegerField(default=0, help_text="Requested stem length")
+    quantity = models.PositiveIntegerField(default=1)
+    price_per_stem = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Potential price per stem")
+    
+    reason = models.CharField(max_length=50, choices=REASON_CHOICES, default='out_of_stock')
+    notes = models.TextField(blank=True, null=True, help_text="Additional details about the request")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-fetch price if not provided
+        if self.price_per_stem is None:
+            from products.models import CustomerProductPrice
+            try:
+                # Try exact match with stem length
+                cpp = CustomerProductPrice.objects.get(
+                    customer=self.customer, 
+                    product=self.product,
+                    stem_length_cm=self.stem_length_cm
+                )
+                self.price_per_stem = cpp.price_per_stem
+            except CustomerProductPrice.DoesNotExist:
+                # Fallback: try to find any price for this product/customer (maybe generic length?)
+                # For now, if no exact match, leave as None (or 0)
+                pass
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.date} - {self.customer} - {self.product} ({self.quantity})"
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['date']),
+            models.Index(fields=['reason']),
+        ]
+
+    def __str__(self):
+        return f"Missed: {self.product.name} ({self.quantity}) - {self.customer.name}"

@@ -87,28 +87,7 @@
         width: 20px;
       }
 
-      .new-features-box {
-        background-color: var(--sidebar-active);
-        margin: 1rem 0.5rem;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        color: var(--sidebar-bg);
-      }
 
-      .new-features-box h6 {
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-
-      .new-features-box a {
-        color: var(--sidebar-bg);
-        text-decoration: none;
-        font-size: 0.9rem;
-      }
-
-      .new-features-box a:hover {
-        text-decoration: underline;
-      }
 
       .sidebar-footer {
         padding: 1rem;
@@ -360,9 +339,15 @@
           </a>
         </div>
         <div class="nav-item">
-          <a href="/orders/" class="nav-link {% if 'orders' in request.path %}active{% endif %}">
+          <a href="/orders/" class="nav-link {% if 'orders' in request.path and 'missed-sales' not in request.path %}active{% endif %}">
             <i class="bi bi-file-earmark-text"></i>
             Orders
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="/orders/missed-sales/" class="nav-link {% if 'missed-sales' in request.path %}active{% endif %}">
+            <i class="bi bi-cart-x"></i>
+            Missed Sales
           </a>
         </div>
         <div class="nav-item">
@@ -409,14 +394,7 @@
         </div>
 
         <!-- New Features Box -->
-        <div class="new-features-box">
-          <h6>New features available!</h6>
-          <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">Check out the new Analytics dashboard with interactive charts.</p>
-          <div style="display: flex; gap: 1rem;">
-            <a href="#" onclick="dismissNewFeatures()">Dismiss</a>
-            <a href="/graphs/">View Analytics</a>
-          </div>
-        </div>
+
       </nav>
 
       <div class="sidebar-footer">
@@ -461,10 +439,7 @@
         sidebar.classList.toggle('show');
       }
 
-      function dismissNewFeatures() {
-        const newFeaturesBox = document.querySelector('.new-features-box');
-        newFeaturesBox.style.display = 'none';
-      }
+
 
       // Close sidebar when clicking outside on mobile
       document.addEventListener('click', function(event) {

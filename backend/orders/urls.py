@@ -12,6 +12,12 @@ urlpatterns = [
     path('<int:order_id>/items/add/', views.order_item_add, name='order_item_add'),
     path('items/<int:item_id>/delete/', views.order_item_delete, name='order_item_delete'),
 
+    # Missed Sales
+    path('missed-sales/', views.missed_sales_list, name='missed_sales_list'),
+    path('missed-sales/create/', views.missed_sale_create, name='missed_sale_create'),
+    path('missed-sales/<int:pk>/edit/', views.missed_sale_edit, name='missed_sale_edit'),
+    path('missed-sales/<int:pk>/delete/', views.missed_sale_delete, name='missed_sale_delete'),
+
     # AJAX helpers
     path('get-branches/', views.get_branches, name='get_branches'),
     path('get-orders/', views.get_orders, name='get_orders'),
