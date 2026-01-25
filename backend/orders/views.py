@@ -81,6 +81,9 @@ def order_create(request):
             logistics_provider = request.POST.get('logistics_provider')
             logistics_cost = request.POST.get('logistics_cost') or None
 
+            logistics_provider = request.POST.get('logistics_provider')
+            logistics_cost = request.POST.get('logistics_cost') or None
+
             order = Order.objects.create(
                 customer_id=customer_id,
                 branch_id=branch_id,
@@ -88,6 +91,14 @@ def order_create(request):
                 remarks=remarks,
                 logistics_provider=logistics_provider,
                 logistics_cost=Decimal(logistics_cost) if logistics_cost else None,
+                # AWB / Export Details
+                invoice_template=request.POST.get('invoice_template', 'default'),
+                awb_number=request.POST.get('awb_number'),
+                flight_number=request.POST.get('flight_number'),
+                agent_name=request.POST.get('agent_name'),
+                mode_of_transport=request.POST.get('mode_of_transport'),
+                inco_term=request.POST.get('inco_term'),
+                deliver_to=request.POST.get('deliver_to'),
             )
 
             # Create initial items from arrays in the form
@@ -145,6 +156,16 @@ def order_edit(request, order_id):
             order.branch_id = request.POST.get('branch') or None
             order.date = request.POST.get('date')
             order.remarks = request.POST.get('remarks')
+            
+            # AWB / Export Details
+            order.invoice_template = request.POST.get('invoice_template', 'default')
+            order.awb_number = request.POST.get('awb_number')
+            order.flight_number = request.POST.get('flight_number')
+            order.agent_name = request.POST.get('agent_name')
+            order.mode_of_transport = request.POST.get('mode_of_transport')
+            order.inco_term = request.POST.get('inco_term')
+            order.deliver_to = request.POST.get('deliver_to')
+
             order.logistics_provider = request.POST.get('logistics_provider')
             logistics_cost = request.POST.get('logistics_cost') or None
             order.logistics_cost = Decimal(logistics_cost) if logistics_cost else None
@@ -357,6 +378,15 @@ def missed_sales_list(request):
     from datetime import datetime
     import json
     
+    # Determine target currency
+    target_currency = 'KES'
+    if request.user.is_authenticated:
+        try:
+            from core.models import UserPreference
+            target_currency = request.user.preferences.currency
+        except (ImportError, AttributeError, UserPreference.DoesNotExist):
+            pass
+
     missed_sales = MissedSale.objects.select_related('customer', 'product').order_by('-date')
     
     # --- Currency Conversion Helper ---
@@ -365,15 +395,25 @@ def missed_sales_list(request):
     for rate in ExchangeRate.objects.all():
         rates[rate.currency] = rate.rate
         
-    def convert_to_ksh(amount, currency):
+    def convert_currency(amount, from_currency, to_currency):
         if not amount: return Decimal('0.00')
-        if currency == 'KSH': return amount
-        rate = rates.get(currency, Decimal('1.0'))
-        return amount * rate
+        if from_currency == to_currency: return amount
+        
+        # Convert to KSH first (base)
+        rate_to_ksh = rates.get(from_currency, Decimal('1.0'))
+        amount_in_ksh = amount * rate_to_ksh
+        
+        # Then convert from KSH to target
+        if to_currency == 'KSH':
+            return amount_in_ksh
+            
+        rate_from_ksh = rates.get(to_currency, Decimal('1.0'))
+        if rate_from_ksh == 0: return amount_in_ksh
+        return amount_in_ksh / rate_from_ksh
 
     # --- Calculations ---
     total_missed_qty = 0
-    potential_revenue_kes = Decimal('0.00')
+    potential_revenue = Decimal('0.00')
     
     # Analytics Buckets
     monthly_data = defaultdict(lambda: {'qty': 0, 'val': Decimal('0.00')})
@@ -393,19 +433,19 @@ def missed_sales_list(request):
             # Local value
             local_val = price * sale.quantity
             # Converted value
-            kes_val = convert_to_ksh(local_val, currency)
+            base_val = convert_currency(local_val, currency, target_currency)
             
-            potential_revenue_kes += kes_val
+            potential_revenue += base_val
             
             # Add to Monthly Trend
             month_key = sale.date.strftime('%Y-%m') # YYYY-MM for sorting
             monthly_data[month_key]['qty'] += sale.quantity
-            monthly_data[month_key]['val'] += kes_val
+            monthly_data[month_key]['val'] += base_val
             
             # Add to Product Breakdown
             prod_name = sale.product.name
             product_data[prod_name]['qty'] += sale.quantity
-            product_data[prod_name]['val'] += kes_val
+            product_data[prod_name]['val'] += base_val
 
     # --- Prepare Chart Data ---
     # 1. Monthly Trend
@@ -433,7 +473,8 @@ def missed_sales_list(request):
     context = {
         'missed_sales': missed_sales,
         'total_missed_qty': total_missed_qty,
-        'potential_revenue': potential_revenue_kes,
+        'potential_revenue': potential_revenue,
+        'currency_label': target_currency,
         'top_missing': MissedSale.objects.values('product__name').annotate(total_qty=Sum('quantity'), requests=Count('id')).order_by('-total_qty')[:5],
         
         # Chart Data
@@ -534,3 +575,67 @@ def missed_sale_delete(request, pk):
         missed_sale.delete()
         messages.success(request, 'Missed sale deleted successfully.')
     return redirect('orders:missed_sales_list')
+
+
+def email_invoice(request, order_id):
+    """View to compose and send invoice via email"""
+    from core.utils.email import send_invoice_email, fetch_recent_threads, get_email_config
+    
+    order = get_object_or_404(Order, id=order_id)
+    config = get_email_config(request.user)
+    has_config = bool(config)
+    
+    # Check if PDF exists, if not try to regenerate
+    # Access via related invoice object
+    invoice = getattr(order, 'invoice', None)
+    
+    if not invoice or not invoice.pdf_file:
+         from invoices.utils import generate_invoice_pdf
+         from invoices.models import Invoice
+         # Get related invoice (should be only one usually, catch issues)
+         try:
+             if not invoice:
+                 invoice, _ = Invoice.objects.get_or_create(order=order, defaults={'invoice_code': order.invoice_code})
+             
+             generate_invoice_pdf(invoice)
+             invoice.refresh_from_db()
+         except Exception as e:
+             messages.warning(request, f"Could not generate invoice PDF: {e}")
+
+    if request.method == 'POST' and has_config:
+        recipient = request.POST.get('recipient')
+        subject = request.POST.get('subject')
+        body = request.POST.get('body')
+        thread_id = request.POST.get('thread_id')
+        
+        try:
+            # Send Email
+            if invoice and invoice.pdf_file:
+                attachment_path = invoice.pdf_file.path
+            else:
+                attachment_path = None
+                
+            send_invoice_email(
+                request.user, 
+                recipient, 
+                subject, 
+                body, 
+                attachment_path=attachment_path,
+                in_reply_to_id=thread_id
+            )
+            messages.success(request, f'Invoice sent successfully to {recipient}!')
+            return redirect('orders:order_detail', order_id=order.id)
+            
+        except Exception as e:
+            messages.error(request, f'Failed to send email: {str(e)}')
+    
+    # Fetch recent threads if configured
+    recent_threads = []
+    if has_config and order.customer.email:
+         recent_threads = fetch_recent_threads(request.user, order.customer.email, limit=5)
+
+    return render(request, 'orders/email_invoice.html', {
+        'order': order,
+        'has_config': has_config,
+        'threads': recent_threads
+    })

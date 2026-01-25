@@ -61,6 +61,22 @@
                             <div class="invalid-feedback">
                                 Please provide a short code.
                             </div>
+                            <div class="invalid-feedback">
+                                Please provide a short code.
+                            </div>
+                        </div>
+
+                        <!-- Email Address -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                Email Address(es)
+                            </label>
+                            <input type="text" class="form-control" id="email" name="email" 
+                                   value="{% if customer %}{{ customer.email|default:'' }}{% endif %}" 
+                                   placeholder="e.g. sales@example.com, accounts@example.com">
+                            <div class="form-text">
+                                Separate multiple addresses with commas. Used for sending invoices automatically.
+                            </div>
                         </div>
 
                         <!-- Preferred Currency -->
@@ -79,6 +95,24 @@
                             </select>
                             <div class="invalid-feedback">
                                 Please select a preferred currency.
+                            </div>
+                        </div>
+
+                        <!-- Invoice Code Preference -->
+                        <div class="mb-4">
+                            <label for="invoice_code_preference" class="form-label">
+                                Invoice Code Preference
+                            </label>
+                            <select class="form-select" id="invoice_code_preference" name="invoice_code_preference">
+                                <option value="branch" {% if not customer or customer.invoice_code_preference == 'branch' %}selected{% endif %}>
+                                    Branch Short Code (Default)
+                                </option>
+                                <option value="customer" {% if customer and customer.invoice_code_preference == 'customer' %}selected{% endif %}>
+                                    Customer Short Code
+                                </option>
+                            </select>
+                            <div class="form-text">
+                                Choose whether to use the Customer's short code or the Branch's short code for invoice numbering.
                             </div>
                         </div>
 

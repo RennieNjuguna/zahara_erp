@@ -38,6 +38,45 @@
           <span class="input-group-text" id="logistics-currency">{{ default_currency }}</span>
         </div>
       </div>
+      
+      <!-- AWB / Export Configuration -->
+      <div class="col-12 mt-4">
+        <h5 class="text-secondary border-bottom pb-2">Invoice & Export Details</h5>
+      </div>
+      
+      <div class="col-md-3">
+        <label class="form-label">Invoice Template</label>
+        <select class="form-select" name="invoice_template" onchange="toggleExportFields()">
+            <option value="default" {% if order.invoice_template == 'default' %}selected{% endif %}>Default Template</option>
+            <option value="awb" {% if order.invoice_template == 'awb' %}selected{% endif %}>AWB / Export Template</option>
+        </select>
+      </div>
+
+      <div class="col-md-3 export-field">
+         <label class="form-label">AWB Number</label>
+         <input class="form-control" type="text" name="awb_number" value="{{ order.awb_number|default:'' }}">
+      </div>
+      <div class="col-md-3 export-field">
+         <label class="form-label">Flight Number</label>
+         <input class="form-control" type="text" name="flight_number" value="{{ order.flight_number|default:'' }}">
+      </div>
+      <div class="col-md-3 export-field">
+         <label class="form-label">Deliver To (Branch/Manual)</label>
+         <input class="form-control" type="text" name="deliver_to" value="{{ order.deliver_to|default:'' }}" placeholder="If different from Branch">
+      </div>
+      
+      <div class="col-md-3 export-field">
+         <label class="form-label">Agent Name</label>
+         <input class="form-control" type="text" name="agent_name" value="{{ order.agent_name|default:'TTC' }}">
+      </div>
+      <div class="col-md-3 export-field">
+         <label class="form-label">Mode of Transport</label>
+         <input class="form-control" type="text" name="mode_of_transport" value="{{ order.mode_of_transport|default:'AIR' }}">
+      </div>
+       <div class="col-md-3 export-field">
+         <label class="form-label">INCO Term</label>
+         <input class="form-control" type="text" name="inco_term" value="{{ order.inco_term|default:'FOB' }}">
+      </div>
     </div>
     <hr class="my-4">
     <h5 class="mb-3">Items</h5>
@@ -445,6 +484,20 @@ document.addEventListener('DOMContentLoaded', function() {
   `;
   document.head.appendChild(style);
 });
+</script>
+</script>
+<script>
+function toggleExportFields() {
+    const template = document.querySelector('select[name="invoice_template"]').value;
+    const fields = document.querySelectorAll('.export-field');
+    // Optional: Hide/Show logic if desired, but user didn't strictly mandate hiding.
+    // If we wanted to hide:
+    /*
+    fields.forEach(f => {
+        f.style.display = template === 'awb' ? 'block' : 'none';
+    });
+    */
+}
 </script>
 {% endblock %}
 

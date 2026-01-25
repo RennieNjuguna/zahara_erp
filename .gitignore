@@ -31,3 +31,8 @@ uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets
+.env
+backend/.env
+**/__pycache__/

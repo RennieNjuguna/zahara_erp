@@ -8,25 +8,79 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    {% with theme=user_prefs.theme|default:'light' font=user_prefs.typography|default:'inter' %}
+    
+    <!-- Typography Imports -->
+    {% if font == 'inter' %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% elif font == 'roboto' %}
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    {% elif font == 'serif' %}
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    {% endif %}
+
     <style>
       :root {
-        --sidebar-bg: #8B008B;
-        --sidebar-hover: #9B209B;
-        --sidebar-active: #FF69B4;
-        --main-bg: #F8F8F8;
-        --card-bg: #FFFFFF;
-        --text-primary: #2C3E50;
-        --text-secondary: #7F8C8D;
-        --accent-magenta: #8B008B;
+        /* Theme Logic */
+        {% if theme == 'dark' %}
+          --sidebar-bg: #2d3436;
+          --sidebar-hover: #636e72;
+          --sidebar-active: #0984e3;
+          --main-bg: #1e272e;
+          --card-bg: #2d3436;
+          --text-primary: #dfe6e9;
+          --text-secondary: #b2bec3;
+          --border-color: #636e72;
+          --accent-magenta: #0984e3; /* Blue for dark mode */
+        {% else %}
+          --sidebar-bg: #8B008B;
+          --sidebar-hover: #9B209B;
+          --sidebar-active: #FF69B4;
+          --main-bg: #F8F8F8;
+          --card-bg: #FFFFFF;
+          --text-primary: #2C3E50;
+          --text-secondary: #7F8C8D;
+          --border-color: #E0E0E0;
+          --accent-magenta: #8B008B;
+        {% endif %}
+
         --success-green: #27AE60;
         --danger-red: #E74C3C;
         --warning-orange: #F39C12;
+        
+        /* Typography Logic */
+        {% if font == 'inter' %}
+          --font-family: 'Inter', sans-serif;
+        {% elif font == 'roboto' %}
+          --font-family: 'Roboto', sans-serif;
+        {% elif font == 'serif' %}
+          --font-family: 'Merriweather', serif;
+        {% else %}
+          --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        {% endif %}
       }
 
       body {
         background-color: var(--main-bg);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-primary);
+        font-family: var(--font-family);
       }
+      
+      /* Dark mode specific overrides */
+      {% if theme == 'dark' %}
+      .card { border-color: var(--border-color); }
+      .table { color: var(--text-primary); border-color: var(--border-color); }
+      .form-control, .form-select {
+          background-color: var(--main-bg);
+          border-color: var(--border-color);
+          color: var(--text-primary);
+      }
+      .form-control:focus, .form-select:focus {
+          background-color: var(--main-bg);
+          color: var(--text-primary);
+      }
+      {% endif %}
+    {% endwith %}
 
       .sidebar {
         background-color: var(--sidebar-bg);

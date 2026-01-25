@@ -24,24 +24,7 @@
     letter-spacing: 0.5px;
   }
 
-  .action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
 
-  .action-btn {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    border: none;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
-  }
-
-  .action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
 </style>
 {% endblock %}
 
@@ -248,16 +231,22 @@
                   {% endif %}
                 </td>
                 <td>
-                  <div class="action-buttons">
-                    <a href="{% url 'orders:order_detail' order.id %}" class="action-btn" style="background-color: var(--accent-magenta); color: white;">
+                  <div class="btn-group" role="group">
+                    <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" title="View Details">
                       <i class="bi bi-eye"></i>
                     </a>
-                    <a href="{% url 'orders:order_edit' order.id %}" class="action-btn" style="background-color: var(--warning-orange); color: white;">
+                    <a href="{% url 'orders:order_edit' order.id %}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="Edit Order">
                       <i class="bi bi-pencil"></i>
                     </a>
-                    <a href="#" class="action-btn" style="background-color: var(--success-green); color: white;">
+                    {% if order.invoice.pdf_file %}
+                    <a href="{{ order.invoice.pdf_file.url }}" class="btn btn-sm btn-outline-success" target="_blank" data-bs-toggle="tooltip" title="Download Invoice">
                       <i class="bi bi-download"></i>
                     </a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled title="No PDF">
+                        <i class="bi bi-file-earmark-x"></i>
+                    </button>
+                    {% endif %}
                   </div>
                 </td>
               </tr>

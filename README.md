@@ -25,8 +25,17 @@ Zahara ERP is a comprehensive Enterprise Resource Planning system designed speci
   - **Interactive Charts**: Monthly data visualization.
 - **Missed Sales Analytics**: Monthly trends and top product breakdown charts.
 
-### 🛡️ Security & Architecture
+### � Advanced Email Integration
 
+- **SMTP/IMAP Support**: Full integration with mail servers (Gmail, Webmail) using SSL/TLS.
+- **Threaded Communication**: Reply to existing email threads directly from the ERP.
+- **Smart Discovery**: Auto-fetches recent emails from customers (both Inbox and Sent items) to maintain context.
+- **Multiple Recipients**: Support for multiple customer emails and CC/BCC workflows ("Reply All").
+- **Native PDF Attachments**: Automatically attaches generated invoices to emails.
+
+### �🛡️ Security & Architecture
+
+- **Secure Configuration**: Uses `.env` files for secrets (Keys, Passwords, Hosts) via `python-decouple`.
 - **Authentication**: Global login requirement with role-based access control (RBAC).
 - **Technology**: Django 3.2+ with Django REST Framework.
 - **PDF Engine**: Python-native `reportlab` (No external OS dependencies like wkhtmltopdf).
@@ -43,6 +52,7 @@ Zahara ERP is a comprehensive Enterprise Resource Planning system designed speci
 - **Frontend**: Django Templates + Bootstrap 5 + HTMX + Chart.js
 - **PDF Generation**: ReportLab
 - **Authentication**: Session & JWT
+- **Configuration**: python-decouple (Environment Variables)
 - **API**: RESTful API with comprehensive endpoints
 
 ## 📦 Installation
@@ -79,19 +89,36 @@ Zahara ERP is a comprehensive Enterprise Resource Planning system designed speci
    pip install -r requirements.txt
    ```
 
-3. **Run database migrations**
+3. **Configure Environment Variables**
+
+   Create a `.env` file in the `backend/` directory:
+
+   ```bash
+   SECRET_KEY=your-secure-secret-key
+   DEBUG=True
+   ALLOWED_HOSTS=localhost,127.0.0.1
+
+   # Email Configuration
+   EMAIL_HOST=mail.yourdomain.com
+   EMAIL_PORT=465
+   EMAIL_USER=your-email@domain.com
+   EMAIL_PASSWORD=your-password
+   EMAIL_IMAP_PORT=993
+   ```
+
+4. **Run database migrations**
 
    ```bash
    python manage.py migrate
    ```
 
-4. **Create superuser account**
+5. **Create superuser account**
 
    ```bash
    python manage.py createsuperuser
    ```
 
-5. **Start development server**
+6. **Start development server**
    ```bash
    python manage.py runserver
    ```
@@ -149,17 +176,6 @@ DATABASES = {
         'PORT': '5432',
     }
 }
-```
-
-### Environment Variables
-
-Create a `.env` file:
-
-```bash
-SECRET_KEY=your-secret-key
-DEBUG=False
-ALLOWED_HOSTS=your-domain.com
-DATABASE_URL=postgresql://user:pass@localhost/zahara_erp
 ```
 
 ### Production Commands

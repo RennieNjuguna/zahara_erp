@@ -165,7 +165,16 @@ class Order(models.Model):
         self.currency = self.customer.preferred_currency
         # Generate invoice code if not already set
         if not self.invoice_code:
-            short_code = self.branch.short_code if self.branch else self.customer.short_code
+            # Determine prefix based on Customer preference
+            preference = self.customer.invoice_code_preference 
+            short_code = None
+            
+            if preference == 'branch' and self.branch:
+                short_code = self.branch.short_code
+            else:
+                # Fallback to customer code if preference is 'customer' OR 'branch' but no branch selected
+                short_code = self.customer.short_code
+
             existing_orders = Order.objects.filter(
                 invoice_code__startswith=short_code
             ).count() + 1
@@ -336,8 +345,23 @@ class Order(models.Model):
 
         return self
 
+    # Invoice Configuration
+    INVOICE_TEMPLATES = (
+        ('default', 'Default Template'),
+        ('awb', 'AWB / Export Template'),
+    )
+    invoice_template = models.CharField(max_length=20, choices=INVOICE_TEMPLATES, default='default')
+    
+    # Export / AWB Details
+    awb_number = models.CharField(max_length=50, blank=True, null=True, help_text="Air Waybill Number")
+    flight_number = models.CharField(max_length=50, blank=True, null=True)
+    agent_name = models.CharField(max_length=100, default='TTC', blank=True, null=True)
+    mode_of_transport = models.CharField(max_length=50, default='AIR', blank=True, null=True)
+    inco_term = models.CharField(max_length=20, default='FOB', blank=True, null=True)
+    deliver_to = models.CharField(max_length=100, blank=True, null=True, help_text="Specific delivery location/person if different from Customer")
+
     def __str__(self):
-        return f"{self.invoice_code} - {self.customer.name}"
+        return f"{self.invoice_code or 'New Order'} - {self.customer.name}"
 
     def clean(self):
         if self.branch and self.branch.customer != self.customer:

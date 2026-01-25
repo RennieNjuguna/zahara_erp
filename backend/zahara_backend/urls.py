@@ -40,6 +40,7 @@ urlpatterns = [
     path('expenses/', include('expenses.urls')),
     path('planting/', include('planting_schedule.urls')),
     path('invoices/', include('invoices.urls')),
+    path('', include('core.urls')),
 ]
 
 if settings.DEBUG:

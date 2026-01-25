@@ -43,7 +43,7 @@
                         </div>
                         <i class="bi bi-currency-dollar fs-1"></i>
                     </div>
-                    <h2 class="display-6 mt-2 mb-0">KES {{ potential_revenue|floatformat:2|intcomma }}</h2>
+                    <h2 class="display-6 mt-2 mb-0">{{ currency_label }} {{ potential_revenue|floatformat:2|intcomma }}</h2>
                 </div>
             </div>
         </div>
@@ -191,7 +191,7 @@
                         yAxisID: 'y',
                     },
                     {
-                        label: 'Potential Val (KES)',
+                        label: 'Potential Val ({{ currency_label }})',
                         data: vals,
                         type: 'line',
                         borderColor: 'rgba(255, 193, 7, 1)',
@@ -210,7 +210,7 @@
                     y1: {
                         beginAtZero: true,
                         position: 'right',
-                        title: { display: true, text: 'Value (KES)' },
+                        title: { display: true, text: 'Value ({{ currency_label }})' },
                         grid: { drawOnChartArea: false }
                     }
                 }

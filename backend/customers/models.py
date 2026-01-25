@@ -13,8 +13,19 @@ class Customer(models.Model):
     name = models.CharField(max_length=100)
     short_code = models.CharField(max_length=10, unique=True)
     preferred_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES)
-    email = models.EmailField(blank=True, null=True)
+    email = models.CharField(max_length=500, blank=True, null=True, help_text="Separate multiple emails with commas")
     phone = models.CharField(max_length=20, blank=True, null=True)
+    
+    INVOICE_CODE_PREFERENCE_CHOICES = [
+        ('branch', 'Branch Short Code (Default)'),
+        ('customer', 'Customer Short Code'),
+    ]
+    invoice_code_preference = models.CharField(
+        max_length=10, 
+        choices=INVOICE_CODE_PREFERENCE_CHOICES, 
+        default='branch',
+        help_text="Choose whether to use the Customer's short code or the Branch's short code for invoice numbering."
+    )
 
     def __str__(self):
         return self.name

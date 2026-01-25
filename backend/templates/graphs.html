@@ -25,40 +25,41 @@
   <div class="col-12">
     <div class="data-card">
       <h5 class="card-title">Filter Options</h5>
-      <div class="row">
-        <div class="col-md-3">
-          <label class="form-label">Date Range</label>
-          <select id="dateRange" class="form-select" onchange="updateCharts()">
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 3 months</option>
-            <option value="365">Last year</option>
-          </select>
+      <form method="get" action=".">
+        <div class="row align-items-end">
+          <div class="col-md-3 mb-2">
+            <label class="form-label">Date Range</label>
+            <div class="input-group">
+                <input type="date" class="form-control" name="date_start" value="{{ filters.date_start|default:'' }}" placeholder="Start">
+                <span class="input-group-text">-</span>
+                <input type="date" class="form-control" name="date_end" value="{{ filters.date_end|default:'' }}" placeholder="End">
+            </div>
+          </div>
+          <div class="col-md-3 mb-2">
+            <label class="form-label">Customer</label>
+            <select name="customer" class="form-select">
+              <option value="">All Customers</option>
+              {% for customer in customers %}
+              <option value="{{ customer.id }}" {% if filters.customer == customer.id %}selected{% endif %}>{{ customer.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3 mb-2">
+            <label class="form-label">Product</label>
+            <select name="product" class="form-select">
+              <option value="">All Products</option>
+              {% for product in products %}
+              <option value="{{ product.id }}" {% if filters.product == product.id %}selected{% endif %}>{{ product.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3 mb-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-filter me-2"></i>Apply Filters
+            </button>
+          </div>
         </div>
-        <div class="col-md-3">
-          <label class="form-label">Customer</label>
-          <select id="customerFilter" class="form-select" onchange="updateCharts()">
-            <option value="">All Customers</option>
-            {% for customer in customers %}
-            <option value="{{ customer.id }}">{{ customer.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Product Category</label>
-          <select id="productFilter" class="form-select" onchange="updateCharts()">
-            <option value="">All Products</option>
-            {% for product in products %}
-            <option value="{{ product.id }}">{{ product.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3">
-          <button class="btn btn-primary mt-4" onclick="refreshCharts()">
-            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-          </button>
-        </div>
-      </div>
+      </form>
     </div>
   </div>
 </div>
@@ -137,31 +138,76 @@
   </div>
 </div>
 
-<!-- Debug Info (remove this later) -->
+
+<!-- Toggle Button -->
 <div class="row mb-4">
-  <div class="col-12">
-    <div class="data-card">
-      <h5 class="card-title">Debug Information</h5>
-      <div class="row">
-        <div class="col-md-3">
-          <strong>Top Products:</strong><br>
-          <small>{{ top_products|length }} items</small><br>
-          <small>First item: {{ top_products.0|default:"None" }}</small>
+  <div class="col-12 text-center">
+    <button class="btn btn-outline-secondary" onclick="toggleAdvancedAnalytics()">
+      <i class="bi bi-chevron-down me-2" id="toggleIcon"></i>
+      <span id="toggleText">Show Advanced Analytics</span>
+    </button>
+  </div>
+</div>
+
+<!-- Advanced Analytics Section (Hidden by default) -->
+<div id="advanced-analytics" style="display: none;">
+  <h4 class="mb-4 text-muted border-bottom pb-2">Advanced Insights</h4>
+  
+  <!-- Row 1: Mix & Daily -->
+  <div class="row mb-4">
+    <div class="col-md-6 mb-4">
+      <div class="data-card">
+        <h5 class="card-title">Customer-Product Mix (Top 10)</h5>
+        <div class="chart-container">
+          <canvas id="cpMixChart"></canvas>
         </div>
-        <div class="col-md-3">
-          <strong>Customer Orders:</strong><br>
-          <small>{{ customer_orders|length }} items</small><br>
-          <small>First item: {{ customer_orders.0|default:"None" }}</small>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="data-card">
+        <h5 class="card-title">Daily Sales Trend</h5>
+        <div class="chart-container">
+          <canvas id="dailySalesChart"></canvas>
         </div>
-        <div class="col-md-3">
-          <strong>Monthly Revenue:</strong><br>
-          <small>{{ monthly_revenue|length }} items</small><br>
-          <small>First value: {{ monthly_revenue.0|default:"None" }}</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Status & Payment -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-4">
+      <div class="data-card">
+        <h5 class="card-title">Order Status Distribution</h5>
+        <div class="chart-container">
+          <canvas id="statusDistChart"></canvas>
         </div>
-        <div class="col-md-3">
-          <strong>Expense Categories:</strong><br>
-          <small>{{ expense_categories|length }} items</small><br>
-          <small>First item: {{ expense_categories.0|default:"None" }}</small>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="data-card">
+        <h5 class="card-title">Payment Methods</h5>
+        <div class="chart-container">
+          <canvas id="payMethodsChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="data-card">
+        <h5 class="card-title">Stem Length Popularity</h5>
+        <div class="chart-container">
+          <canvas id="stemLengthsChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: AOV -->
+  <div class="row mb-4">
+    <div class="col-12 mb-4">
+      <div class="data-card">
+        <h5 class="card-title">Average Order Value (Monthly)</h5>
+        <div class="chart-container">
+          <canvas id="aovChart"></canvas>
         </div>
       </div>
     </div>
@@ -223,20 +269,54 @@
 }
 </style>
 
-<!-- Chart.js CDN -->
+<!-- Chart.js and Datalabels Plugin -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
 <script>
+// Register the plugin
+Chart.register(ChartDataLabels);
+
 // Global chart instances
 let topProductsChart = null;
 let customerOrdersChart = null;
 let monthlyRevenueChart = null;
 let expenseCategoriesChart = null;
+    
+// Advanced instances
+let cpMixChart = null;
+let dailySalesChart = null;
+let statusDistChart = null;
+let payMethodsChart = null;
+let stemLengthsChart = null;
+let aovChart = null;
 
 // Initialize all charts when page loads
 document.addEventListener('DOMContentLoaded', function() {
   initializeCharts();
+  
+  // Render advanced charts too but they are hidden
+  initializeAdvancedCharts();
 });
+
+// Toggle Advanced Analytics
+function toggleAdvancedAnalytics() {
+    const section = document.getElementById('advanced-analytics');
+    const icon = document.getElementById('toggleIcon');
+    const text = document.getElementById('toggleText');
+    
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+        text.innerText = 'Hide Advanced Analytics';
+    } else {
+        section.style.display = 'none';
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+        text.innerText = 'Show Advanced Analytics';
+    }
+}
 
 // Initialize all charts
 function initializeCharts() {
@@ -246,25 +326,44 @@ function initializeCharts() {
   createExpenseCategoriesChart();
 }
 
+function initializeAdvancedCharts() {
+    createCpMixChart();
+    createDailySalesChart();
+    createStatusDistChart();
+    createPayMethodsChart();
+    createStemLengthsChart();
+    createAovChart();
+}
+
+// Common Chart Options
+const commonOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    datalabels: {
+      color: '#fff',
+      textShadowColor: 'black',
+      textShadowBlur: 4,
+      font: {
+        weight: 'bold',
+        size: 11
+      },
+      display: 'auto', // Only show if enough space
+      formatter: (value, ctx) => {
+        // Format if needed
+        return value; 
+      }
+    }
+  }
+};
+
 // Top Products Chart
 function createTopProductsChart() {
   const ctx = document.getElementById('topProductsChart').getContext('2d');
-
-  // Get real data from Django template
   const topProductsData = {{ top_products|safe }};
 
-  // Debug logging
-  console.log('Top Products Data:', topProductsData);
-  console.log('Data type:', typeof topProductsData);
-  console.log('Data length:', topProductsData ? topProductsData.length : 'undefined');
-
-  // Handle empty data
   if (!topProductsData || topProductsData.length === 0) {
-    console.log('No top products data available');
-    ctx.fillStyle = '#999';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    showNoData(ctx);
     return;
   }
 
@@ -277,37 +376,29 @@ function createTopProductsChart() {
       label: 'Orders',
       data: data,
       backgroundColor: [
-        'rgba(255, 99, 132, 0.8)',
-        'rgba(54, 162, 235, 0.8)',
-        'rgba(255, 206, 86, 0.8)',
-        'rgba(75, 192, 192, 0.8)',
-        'rgba(153, 102, 255, 0.8)'
+        'rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)',
+        'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)'
       ],
-      borderColor: [
-        'rgba(255, 99, 132, 1)',
-        'rgba(54, 162, 235, 1)',
-        'rgba(255, 206, 86, 1)',
-        'rgba(75, 192, 192, 1)',
-        'rgba(153, 102, 255, 1)'
-      ],
-      borderWidth: 2
+      borderWidth: 1
     }]
   };
 
-  // Destroy existing chart if it exists
-  if (topProductsChart) {
-    topProductsChart.destroy();
-  }
+  if (topProductsChart) topProductsChart.destroy();
 
   topProductsChart = new Chart(ctx, {
     type: 'doughnut',
     data: chartData,
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      ...commonOptions,
       plugins: {
-        legend: {
-          position: 'bottom'
+        ...commonOptions.plugins,
+        legend: { position: 'bottom' },
+        datalabels: {
+            ...commonOptions.plugins.datalabels,
+            color: '#000', // Better contrast on light bg if outside, but donut usually inside
+            textShadowBlur: 0,
+            color: ['#fff', '#fff', '#000', '#fff', '#fff'], // Manually adjust or keep simple
+            formatter: (value) => value
         }
       }
     }
@@ -317,16 +408,10 @@ function createTopProductsChart() {
 // Customer Orders Chart
 function createCustomerOrdersChart() {
   const ctx = document.getElementById('customerOrdersChart').getContext('2d');
-
-  // Get real data from Django template
   const customerOrdersData = {{ customer_orders|safe }};
 
-  // Handle empty data
   if (!customerOrdersData || customerOrdersData.length === 0) {
-    ctx.fillStyle = '#999';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    showNoData(ctx);
     return;
   }
 
@@ -336,38 +421,32 @@ function createCustomerOrdersChart() {
   const chartData = {
     labels: labels,
     datasets: [{
-      label: 'Number of Orders',
+      label: 'Orders',
       data: data,
-      backgroundColor: 'rgba(75, 192, 192, 0.8)',
+      backgroundColor: 'rgba(75, 192, 192, 0.7)',
       borderColor: 'rgba(75, 192, 192, 1)',
-      borderWidth: 2
+      borderWidth: 1
     }]
   };
 
-  // Destroy existing chart if it exists
-  if (customerOrdersChart) {
-    customerOrdersChart.destroy();
-  }
+  if (customerOrdersChart) customerOrdersChart.destroy();
 
   customerOrdersChart = new Chart(ctx, {
     type: 'bar',
     data: chartData,
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      ...commonOptions,
+      indexAxis: 'y', // Horizontal Layout for better label fit
       plugins: {
-        legend: {
-          display: false
+        legend: { display: false },
+        datalabels: {
+            anchor: 'end',
+            align: 'end',
+            color: '#666',
+            textShadowBlur: 0
         }
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            stepSize: 1
-          }
-        }
-      }
+      scales: { x: { beginAtZero: true } }
     }
   });
 }
@@ -375,17 +454,11 @@ function createCustomerOrdersChart() {
 // Monthly Revenue Chart
 function createMonthlyRevenueChart() {
   const ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
-
-  // Get real data from Django template
   const monthlyLabels = {{ monthly_labels|safe }};
   const monthlyRevenue = {{ monthly_revenue|safe }};
 
-  // Handle empty data
   if (!monthlyRevenue || monthlyRevenue.length === 0) {
-    ctx.fillStyle = '#999';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    showNoData(ctx);
     return;
   }
 
@@ -396,36 +469,35 @@ function createMonthlyRevenueChart() {
       data: monthlyRevenue,
       borderColor: 'rgba(255, 99, 132, 1)',
       backgroundColor: 'rgba(255, 99, 132, 0.1)',
-      borderWidth: 3,
+      borderWidth: 2,
       fill: true,
-      tension: 0.4
+      tension: 0.3
     }]
   };
 
-  // Destroy existing chart if it exists
-  if (monthlyRevenueChart) {
-    monthlyRevenueChart.destroy();
-  }
+  if (monthlyRevenueChart) monthlyRevenueChart.destroy();
 
   monthlyRevenueChart = new Chart(ctx, {
     type: 'line',
     data: chartData,
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      ...commonOptions,
       plugins: {
-        legend: {
-          display: false
+        legend: { display: false },
+        datalabels: {
+            display: 'auto',
+            align: 'top',
+            anchor: 'end',
+            color: '#d63031',
+            textShadowBlur: 0,
+            formatter: (value) => value >= 1000 ? (value/1000).toFixed(1) + 'k' : value
         }
       },
       scales: {
         y: {
           beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return 'KES ' + (value / 1000) + 'K';
-            }
-          }
+          grace: '10%', // Add 10% padding at top
+          ticks: { callback: (val) => 'KES ' + (val/1000) + 'K' }
         }
       }
     }
@@ -435,16 +507,10 @@ function createMonthlyRevenueChart() {
 // Expense Categories Chart
 function createExpenseCategoriesChart() {
   const ctx = document.getElementById('expenseCategoriesChart').getContext('2d');
-
-  // Get real data from Django template
   const expenseCategoriesData = {{ expense_categories|safe }};
 
-  // Handle empty data
   if (!expenseCategoriesData || expenseCategoriesData.length === 0) {
-    ctx.fillStyle = '#999';
-    ctx.font = '16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    showNoData(ctx);
     return;
   }
 
@@ -457,58 +523,243 @@ function createExpenseCategoriesChart() {
       label: 'Amount (KES)',
       data: data,
       backgroundColor: [
-        'rgba(255, 99, 132, 0.8)',
-        'rgba(54, 162, 235, 0.8)',
-        'rgba(255, 206, 86, 0.8)',
-        'rgba(75, 192, 192, 0.8)',
-        'rgba(153, 102, 255, 0.8)'
+        'rgba(255, 99, 132, 0.8)', 'rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)',
+        'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)'
       ],
-      borderColor: [
-        'rgba(255, 99, 132, 1)',
-        'rgba(54, 162, 235, 1)',
-        'rgba(255, 206, 86, 1)',
-        'rgba(75, 192, 192, 1)',
-        'rgba(153, 102, 255, 1)'
-      ],
-      borderWidth: 2
+      borderWidth: 1
     }]
   };
 
-  // Destroy existing chart if it exists
-  if (expenseCategoriesChart) {
-    expenseCategoriesChart.destroy();
-  }
+  if (expenseCategoriesChart) expenseCategoriesChart.destroy();
 
   expenseCategoriesChart = new Chart(ctx, {
     type: 'pie',
     data: chartData,
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      ...commonOptions,
       plugins: {
-        legend: {
-          position: 'bottom'
+        legend: { position: 'bottom' },
+        datalabels: {
+            color: '#fff',
+            formatter: (value, ctx) => {
+                let sum = 0;
+                let dataArr = ctx.chart.data.datasets[0].data;
+                dataArr.map(data => { sum += data; });
+                return (value*100 / sum).toFixed(0)+"%";
+            }
         }
       }
     }
   });
 }
 
-// Update charts based on filters
-function updateCharts() {
-  const dateRange = document.getElementById('dateRange').value;
-  const customerFilter = document.getElementById('customerFilter').value;
-  const productFilter = document.getElementById('productFilter').value;
+// --- Advanced Charts Implementations ---
 
-  // For now, just refresh all charts
-  // In a real implementation, you would make AJAX calls to get filtered data
-  refreshCharts();
+// 1. Customer-Product Mix (Stacked Bar)
+function createCpMixChart() {
+    const ctx = document.getElementById('cpMixChart').getContext('2d');
+    const data = {{ cp_mix|safe }};
+    
+    if (!data || !data.labels || data.labels.length === 0) { showNoData(ctx); return; }
+    
+    // Assign colors to datasets automatically
+    const colors = ['#36a2eb', '#ff6384', '#ffce56', '#4bc0c0', '#9966ff'];
+    data.datasets.forEach((ds, i) => {
+        ds.backgroundColor = colors[i % colors.length];
+        ds.stack = 'stack0';
+    });
+
+    if (cpMixChart) cpMixChart.destroy();
+    
+    cpMixChart = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+            ...commonOptions,
+            scales: { x: { stacked: true }, y: { stacked: true } },
+            plugins: {
+                datalabels: { display: false } // Too crowded for stacked
+            }
+        }
+    }); 
 }
 
-// Refresh all charts
-function refreshCharts() {
-  // Recreate charts
-  initializeCharts();
+// 2. Daily Sales (Line)
+function createDailySalesChart() {
+    const ctx = document.getElementById('dailySalesChart').getContext('2d');
+    const data = {{ daily_sales|safe }};
+    
+    if (!data || !data.data || data.data.length === 0 || data.data.every(v => v === 0)) { showNoData(ctx); return; }
+
+    if (dailySalesChart) dailySalesChart.destroy();
+    
+    dailySalesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: 'Revenue',
+                data: data.data,
+                borderColor: '#00b894',
+                backgroundColor: 'rgba(0, 184, 148, 0.1)',
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false } // Too dense for daily
+            }
+        }
+    });
+}
+
+// 3. Status Distribution (Pie)
+function createStatusDistChart() {
+    const ctx = document.getElementById('statusDistChart').getContext('2d');
+    const data = {{ status_dist|safe }};
+    
+    // Check if any data
+    if (!data || !data.data.some(v => v > 0)) { showNoData(ctx); return; }
+
+    if (statusDistChart) statusDistChart.destroy();
+    
+    statusDistChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                data: data.data,
+                backgroundColor: ['#2ecc71', '#f1c40f', '#e74c3c', '#95a5a6']
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                legend: { position: 'right' },
+                datalabels: {
+                    color: '#fff',
+                    formatter: (value, ctx) => {
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => { sum += data; });
+                        return value > 0 ? (value*100 / sum).toFixed(0)+"%" : '';
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 4. Payment Methods (Doughnut)
+function createPayMethodsChart() {
+    const ctx = document.getElementById('payMethodsChart').getContext('2d');
+    const data = {{ pay_methods|safe }};
+    
+    if (!data || !data.data.some(v => v > 0)) { showNoData(ctx); return; }
+
+    if (payMethodsChart) payMethodsChart.destroy();
+    
+    payMethodsChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                data: data.data,
+                backgroundColor: ['#0984e3', '#6c5ce7', '#fdcb6e', '#e17055', '#00cec9']
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                legend: { position: 'bottom' },
+                datalabels: { color: '#fff' }
+            }
+        }
+    });
+}
+
+// 5. Stem Lengths (Bar)
+function createStemLengthsChart() {
+    const ctx = document.getElementById('stemLengthsChart').getContext('2d');
+    const data = {{ stem_lengths|safe }};
+    
+    if (!data || !data.data.some(v => v > 0)) { showNoData(ctx); return; }
+
+    if (stemLengthsChart) stemLengthsChart.destroy();
+    
+    stemLengthsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: 'Quantity',
+                data: data.data,
+                backgroundColor: '#fd79a8'
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#636e72',
+                    textShadowBlur: 0
+                }
+            }
+        }
+    });
+}
+
+// 6. AOV Chart (Line)
+function createAovChart() {
+    const ctx = document.getElementById('aovChart').getContext('2d');
+    const labels = {{ monthly_labels|safe }}; // Reuse monthly labels
+    const data = {{ aov_data|safe }};
+    
+    if (!data || data.every(v => v === 0)) { showNoData(ctx); return; }
+
+    if (aovChart) aovChart.destroy();
+    
+    aovChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Avg Order Value',
+                data: data,
+                borderColor: '#e84393',
+                backgroundColor: 'rgba(232, 67, 147, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: (val) => (val/1000).toFixed(1) + 'K' }
+                }
+            }
+        }
+    });
+}
+
+function showNoData(ctx) {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#999';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
 }
 </script>
 {% endblock %}

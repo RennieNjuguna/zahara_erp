@@ -94,13 +94,17 @@ def customer_create(request):
         name = request.POST.get('name')
         short_code = request.POST.get('short_code')
         preferred_currency = request.POST.get('preferred_currency')
+        invoice_code_preference = request.POST.get('invoice_code_preference', 'branch')
+        email = request.POST.get('email')
 
         if name and short_code and preferred_currency:
             try:
                 customer = Customer.objects.create(
                     name=name,
                     short_code=short_code,
-                    preferred_currency=preferred_currency
+                    preferred_currency=preferred_currency,
+                    invoice_code_preference=invoice_code_preference,
+                    email=email  # Save email
                 )
                 messages.success(request, f'Customer "{customer.name}" created successfully!')
                 return redirect('customers:customer_detail', customer_id=customer.id)
@@ -123,12 +127,16 @@ def customer_edit(request, customer_id):
         name = request.POST.get('name')
         short_code = request.POST.get('short_code')
         preferred_currency = request.POST.get('preferred_currency')
+        invoice_code_preference = request.POST.get('invoice_code_preference', 'branch')
+        email = request.POST.get('email')
 
         if name and short_code and preferred_currency:
             try:
                 customer.name = name
                 customer.short_code = short_code
                 customer.preferred_currency = preferred_currency
+                customer.invoice_code_preference = invoice_code_preference
+                customer.email = email  # Update email
                 customer.save()
                 messages.success(request, f'Customer "{customer.name}" updated successfully!')
                 return redirect('customers:customer_detail', customer_id=customer.id)
