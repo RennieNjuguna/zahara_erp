@@ -658,7 +658,7 @@ def payment_analytics(request):
 
 
 # API endpoints for AJAX calls
-@csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_outstanding_orders(request, customer_id):
     """Get outstanding orders for a customer"""
@@ -679,7 +679,7 @@ def get_outstanding_orders(request, customer_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
+@login_required
 @require_http_methods(["GET"])
 def get_customer_balance(request, customer_id):
     """Get current balance for a customer"""

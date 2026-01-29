@@ -21,8 +21,11 @@ from django.conf.urls.static import static
 from django.conf.urls.static import static
 from .views import home, graphs, custom_login_view, update_rates
 
+from django.contrib.auth import views as auth_views
+
 urlpatterns = [
     path('login/', custom_login_view, name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     path('', home, name='home'),
     path('update-rates/', update_rates, name='update_rates'),
     path('graphs/', graphs, name='graphs'),

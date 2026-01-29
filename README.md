@@ -18,9 +18,19 @@ Zahara ERP is a comprehensive Enterprise Resource Planning system designed speci
 - **Missed Sales Tracker**: Track lost opportunities, visualize trends, and estimate potential revenue loss (KES) with interactive analytics.
 - **Agricultural Planning**: Crop and farm block management for production planning.
 
+### 🎨 User Experience & Customization
+
+- **Personalized Settings**: Per-user preferences for:
+  - **Theme**: Light, Dark, or System Sync.
+  - **Typography**: Multiple font choices (Inter, Roboto, Lato, etc.) for readability.
+  - **Localization**: Preferred currency display (e.g., KES, USD) automatically applied to dashboards.
+- **Global Logout**: Secure session termination from any page.
+
 ### 📊 Analytics & Dashboards
 
 - **Main Dashboard**: Real-time overview of Sales, Payments, and Expenses.
+  - **Key Metrics**: 8 Monthly Performance Indicators (Total Orders, Revenue, Expenses, Net Profit, etc.).
+  - **Unified Feed**: Real-time stream of latest payments and expenses.
   - **Multi-Currency Aggregation**: Automatically converts USD, EUR, GBP to KES for consolidated totals.
   - **Interactive Charts**: Monthly data visualization.
 - **Missed Sales Analytics**: Monthly trends and top product breakdown charts.
