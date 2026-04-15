@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'planting_schedule',
     'api',
     'core',
+    'data_import',
 ]
 
 MIDDLEWARE = [

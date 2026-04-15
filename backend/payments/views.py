@@ -17,7 +17,7 @@ import json
 import os
 
 from .models import (
-    Payment, PaymentType, PaymentAllocation, CustomerBalance,
+    Payment, PaymentAllocation, CustomerBalance,
     AccountStatement, PaymentLog
 )
 from customers.models import Customer
@@ -100,7 +100,6 @@ def payment_list(request):
 
     # Get filter options
     customers = Customer.objects.all().order_by('name')
-    payment_types = PaymentType.objects.filter(is_active=True)
 
     # Calculate summary statistics with proper rounding
     total_payments = Payment.objects.filter(status='completed').aggregate(
@@ -119,7 +118,6 @@ def payment_list(request):
     context = {
         'page_obj': page_obj,
         'customers': customers,
-        'payment_types': payment_types,
         'filters': request.GET,
         'total_payments': total_payments,
         'total_outstanding': total_outstanding,
@@ -163,7 +161,6 @@ def payment_create(request):
         # Handle payment creation
         try:
             customer_id = request.POST.get('customer')
-            payment_type_id = request.POST.get('payment_type')
             amount = request.POST.get('amount')
             payment_method = request.POST.get('payment_method')
             payment_date = request.POST.get('payment_date')
@@ -171,7 +168,7 @@ def payment_create(request):
             notes = request.POST.get('notes')
 
             # Validate required fields
-            if not all([customer_id, payment_type_id, amount, payment_method, payment_date]):
+            if not all([customer_id, amount, payment_method, payment_date]):
                 messages.error(request, 'Please fill in all required fields.')
                 raise ValueError('Missing required fields')
 
@@ -186,14 +183,12 @@ def payment_create(request):
                 raise ValueError('Invalid amount format')
 
             customer = Customer.objects.get(id=customer_id)
-            payment_type = PaymentType.objects.get(id=payment_type_id)
 
             # Get status from form, default to 'completed'
             status = request.POST.get('status', 'completed')
 
             payment = Payment.objects.create(
                 customer=customer,
-                payment_type=payment_type,
                 amount=amount,
                 payment_method=payment_method,
                 payment_date=payment_date,
@@ -224,11 +219,9 @@ def payment_create(request):
 
     # GET request - show form
     customers = Customer.objects.all().order_by('name')
-    payment_types = PaymentType.objects.filter(is_active=True)
 
     context = {
         'customers': customers,
-        'payment_types': payment_types,
     }
 
     return render(request, 'payments/payment_form.html', context)
@@ -243,7 +236,6 @@ def payment_edit(request, payment_id):
         # Handle payment update
         try:
             payment.customer_id = request.POST.get('customer')
-            payment.payment_type_id = request.POST.get('payment_type')
             payment.amount = request.POST.get('amount')
             payment.payment_method = request.POST.get('payment_method')
             payment.payment_date = request.POST.get('payment_date')
@@ -270,12 +262,10 @@ def payment_edit(request, payment_id):
 
     # GET request - show form
     customers = Customer.objects.all().order_by('name')
-    payment_types = PaymentType.objects.filter(is_active=True)
 
     context = {
         'payment': payment,
         'customers': customers,
-        'payment_types': payment_types,
     }
 
     return render(request, 'payments/payment_form.html', context)

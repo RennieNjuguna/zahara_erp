@@ -55,7 +55,6 @@ class OrderFilter(django_filters.FilterSet):
 
 class PaymentFilter(django_filters.FilterSet):
     customer = django_filters.ModelChoiceFilter(queryset=CustomerModel.objects.all())
-    payment_type = django_filters.ModelChoiceFilter(queryset=PaymentModel.payment_type.field.related_model.objects.all())
     payment_method = django_filters.ChoiceFilter(choices=PaymentModel.PAYMENT_METHOD_CHOICES)
     status = django_filters.ChoiceFilter(choices=PaymentModel.STATUS_CHOICES)
     currency = django_filters.ChoiceFilter(choices=CustomerModel.CURRENCY_CHOICES)
@@ -68,7 +67,7 @@ class PaymentFilter(django_filters.FilterSet):
 
     class Meta:
         model = PaymentModel
-        fields = ['customer', 'payment_type', 'payment_method', 'status', 'currency']
+        fields = ['customer', 'payment_method', 'status', 'currency']
 
     def filter_allocated(self, queryset, name, value):
         if value is not None:

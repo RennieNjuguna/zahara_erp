@@ -47,22 +47,6 @@
                                 <div class="invalid-feedback">Please select a customer.</div>
                             </div>
 
-                            <!-- Payment Type -->
-                            <div class="col-md-6">
-                                <label for="payment_type" class="form-label fw-semibold">
-                                    <i class="bi bi-tag me-1"></i>Payment Type <span class="text-danger">*</span>
-                                </label>
-                                <select name="payment_type" id="payment_type" class="form-select form-select-lg" required>
-                                    <option value="">Select payment type</option>
-                                    {% for pt in payment_types %}
-                                    <option value="{{ pt.id }}" {% if payment.payment_type.id == pt.id %}selected{% endif %}>
-                                        {{ pt.name }} ({{ pt.get_mode_display }})
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <div class="invalid-feedback">Please select a payment type.</div>
-                            </div>
-
                             <!-- Amount -->
                             <div class="col-md-6">
                                 <label for="amount" class="form-label fw-semibold">

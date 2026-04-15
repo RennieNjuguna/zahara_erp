@@ -36,3 +36,9 @@ Thumbs.db
 .env
 backend/.env
 **/__pycache__/
+
+# Sensitive Data
+backend/data/
+backend/data_import/
+import_knet.py
+backend/import_knet.py

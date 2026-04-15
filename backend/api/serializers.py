@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from customers.models import Customer, Branch
 from products.models import Product, CustomerProductPrice
 from orders.models import Order, OrderItem, CustomerOrderDefaults
-from payments.models import Payment, PaymentType, PaymentAllocation, CustomerBalance, AccountStatement, PaymentLog
+from payments.models import Payment, PaymentAllocation, CustomerBalance, AccountStatement, PaymentLog
 from invoices.models import Invoice, CreditNote, CreditNoteItem
 from expenses.models import Expense, ExpenseCategory, ExpenseAttachment
 from employees.models import Employee
@@ -198,12 +198,6 @@ class CustomerOrderDefaultsSerializer(serializers.ModelSerializer):
 
 
 # Payment Serializers
-class PaymentTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaymentType
-        fields = ['id', 'name', 'mode', 'description', 'is_active']
-
-
 class PaymentAllocationSerializer(serializers.ModelSerializer):
     order = OrderSummarySerializer(read_only=True)
 
@@ -214,7 +208,6 @@ class PaymentAllocationSerializer(serializers.ModelSerializer):
 
 class PaymentSerializer(serializers.ModelSerializer):
     customer = CustomerSummarySerializer(read_only=True)
-    payment_type = PaymentTypeSerializer(read_only=True)
     allocations = PaymentAllocationSerializer(many=True, read_only=True)
     allocated_amount = serializers.ReadOnlyField()
     unallocated_amount = serializers.ReadOnlyField()
@@ -223,7 +216,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = [
-            'payment_id', 'customer', 'payment_type', 'amount', 'currency',
+            'payment_id', 'customer', 'amount', 'currency',
             'payment_method', 'payment_date', 'status', 'reference_number',
             'notes', 'allocations', 'allocated_amount', 'unallocated_amount',
             'is_fully_allocated', 'created_at', 'updated_at'
@@ -234,7 +227,7 @@ class CreatePaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = [
-            'customer', 'payment_type', 'amount', 'payment_method',
+            'customer', 'amount', 'payment_method',
             'payment_date', 'reference_number', 'notes', 'status'
         ]
 

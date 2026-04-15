@@ -13,7 +13,7 @@ from decimal import Decimal
 from customers.models import Customer, Branch
 from products.models import Product, CustomerProductPrice
 from orders.models import Order, OrderItem, CustomerOrderDefaults
-from payments.models import Payment, PaymentType, PaymentAllocation, CustomerBalance, AccountStatement
+from payments.models import Payment, PaymentAllocation, CustomerBalance, AccountStatement
 from invoices.models import Invoice, CreditNote, CreditNoteItem
 from expenses.models import Expense, ExpenseCategory, ExpenseAttachment
 from employees.models import Employee
@@ -34,7 +34,7 @@ from .serializers import (
 
     # Payment serializers
     PaymentSerializer, PaymentSummarySerializer, CreatePaymentSerializer,
-    PaymentTypeSerializer, PaymentAllocationSerializer, PaymentAllocationRequestSerializer,
+    PaymentAllocationSerializer, PaymentAllocationRequestSerializer,
     CustomerBalanceSerializer, AccountStatementSerializer,
 
     # Invoice serializers
@@ -284,13 +284,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
         allocations = payment.allocations.all()
         serializer = PaymentAllocationSerializer(allocations, many=True)
         return Response(serializer.data)
-
-
-class PaymentTypeViewSet(viewsets.ModelViewSet):
-    queryset = PaymentType.objects.all()
-    serializer_class = PaymentTypeSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['is_active', 'mode']
 
 
 class CustomerBalanceViewSet(viewsets.ReadOnlyModelViewSet):

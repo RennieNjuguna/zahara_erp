@@ -43,6 +43,7 @@ urlpatterns = [
     path('expenses/', include('expenses.urls')),
     path('planting/', include('planting_schedule.urls')),
     path('invoices/', include('invoices.urls')),
+    path('data-import/', include('data_import.urls', namespace='data_import')),
     path('', include('core.urls')),
 ]
 

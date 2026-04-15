@@ -13,22 +13,7 @@ from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 
 
-class PaymentType(models.Model):
-    """Payment type configuration for different payment modes"""
-    PAYMENT_MODE_CHOICES = [
-        ('per_order', 'Per Order Payment'),
-        ('bulk', 'Bulk Payment'),
-        ('monthly', 'Monthly Payment'),
-    ]
 
-    name = models.CharField(max_length=100)
-    mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES)
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.name} ({self.get_mode_display()})"
 
 
 class Payment(models.Model):
@@ -52,7 +37,6 @@ class Payment(models.Model):
     # Basic payment information
     payment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='new_payments')
-    payment_type = models.ForeignKey(PaymentType, on_delete=models.PROTECT)
 
     # Payment details
     amount = models.DecimalField(max_digits=15, decimal_places=2)

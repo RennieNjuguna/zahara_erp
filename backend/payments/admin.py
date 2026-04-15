@@ -9,7 +9,7 @@ from django.shortcuts import render
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 from .models import (
-    PaymentType, Payment, PaymentAllocation, CustomerBalance,
+    Payment, PaymentAllocation, CustomerBalance,
     AccountStatement, PaymentLog
 )
 from customers.models import Customer
@@ -35,14 +35,6 @@ class HasOrdersFilter(admin.SimpleListFilter):
         return queryset
 
 
-@admin.register(PaymentType)
-class PaymentTypeAdmin(admin.ModelAdmin):
-    list_display = ['name', 'mode', 'is_active', 'created_at']
-    list_filter = ['mode', 'is_active']
-    search_fields = ['name', 'description']
-    ordering = ['name']
-
-
 class PaymentAllocationInline(admin.TabularInline):
     model = PaymentAllocation
     extra = 1
@@ -65,7 +57,7 @@ class PaymentAdmin(admin.ModelAdmin):
         'payment_date', 'status', 'allocated_amount_display', 'unallocated_amount_display'
     ]
     list_filter = [
-        'status', 'payment_method', 'payment_date', 'payment_type', 'currency'
+        'status', 'payment_method', 'payment_date', 'currency'
     ]
     search_fields = [
         'customer__name', 'reference_number', 'notes', 'payment_id'
@@ -79,7 +71,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('payment_id', 'customer', 'payment_type', 'status')
+            'fields': ('payment_id', 'customer', 'status')
         }),
         ('Payment Details', {
             'fields': ('amount', 'currency', 'payment_method', 'payment_date')
