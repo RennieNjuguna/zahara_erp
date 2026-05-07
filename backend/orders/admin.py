@@ -3,14 +3,14 @@ from django.utils.html import format_html
 from django.urls import path
 from django.http import JsonResponse
 from django.template.response import TemplateResponse
-from .models import Order, OrderItem, CustomerOrderDefaults
+from .models import Order, OrderItem, OrderBox, CustomerOrderDefaults
 from .forms import OrderItemForm, OrderAdminForm
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     form = OrderItemForm
     extra = 1  # Start with one empty item
-    fields = ('product', 'stem_length_cm', 'boxes', 'stems_per_box', 'stems', 'price_per_stem', 'total_amount')
+    fields = ('product', 'stem_length_cm', 'box', 'boxes', 'stems_per_box', 'stems', 'price_per_stem', 'total_amount')
     readonly_fields = ('stems', 'total_amount')
 
     def get_formset(self, request, obj=None, **kwargs):
@@ -34,10 +34,16 @@ class OrderItemInline(admin.TabularInline):
         return obj.total_amount
     total_amount.short_description = 'Total Amount'
 
+
+class OrderBoxInline(admin.TabularInline):
+    model = OrderBox
+    extra = 0
+    fields = ('box_number', 'label')
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     form = OrderAdminForm
-    inlines = [OrderItemInline]
+    inlines = [OrderBoxInline, OrderItemInline]
     list_display = ('invoice_code', 'customer', 'branch', 'date', 'total_amount', 'currency')
     list_filter = ('customer', 'branch', 'date')
     search_fields = ('invoice_code', 'customer__name')
@@ -171,3 +177,10 @@ class CustomerOrderDefaultsAdmin(admin.ModelAdmin):
     list_filter = ('customer', 'product', 'stem_length_cm')
     search_fields = ('customer__name', 'product__name')
     readonly_fields = ('last_used',)
+
+
+@admin.register(OrderBox)
+class OrderBoxAdmin(admin.ModelAdmin):
+    list_display = ('order', 'box_number', 'label')
+    list_filter = ('order__customer',)
+    search_fields = ('order__invoice_code', 'label')

@@ -7,6 +7,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.units import cm
+from reportlab.graphics.barcode import qr
+from reportlab.graphics.shapes import Drawing
 
 def generate_invoice_pdf(invoice):
     """Generate PDF for an invoice using ReportLab (Robust & Portable)"""
@@ -35,6 +37,8 @@ def generate_invoice_pdf(invoice):
         _draw_awb_layout(elements, styles, invoice, order, currency)
     else:
         _draw_default_layout(elements, styles, invoice, order, currency)
+    
+    _draw_etims_info(elements, styles, invoice)
     
     # Build
     doc.build(elements)
@@ -77,7 +81,7 @@ def _draw_default_layout(elements, styles, invoice, order, currency):
     # Location Info
     location_info = [
         [Paragraph("Nakuru & Laikipia, Kenya", styles['InvoiceHeaderRight'])],
-        [Paragraph("TAX ID P052064981H", styles['InvoiceHeaderRight'])]
+        [Paragraph("<b>TAX ID: P052064981H</b>", styles['InvoiceHeaderRight'])]
     ]
     
     header_data = [[
@@ -118,7 +122,7 @@ def _draw_default_layout(elements, styles, invoice, order, currency):
         [Paragraph(f"{customer.name}", styles['Normal'])],
     ]
     if order.branch:
-         c_details.append([Paragraph(f"Branch: {order.branch.name}", styles['Normal'])])
+         c_details.append([Paragraph(f"{order.branch.name}", styles['Normal'])])
     
     if order.remarks:
         c_details.append([Spacer(1, 0.2*cm)])
@@ -161,24 +165,50 @@ def _draw_default_layout(elements, styles, invoice, order, currency):
     elements.append(details_table)
     elements.append(Spacer(1, 1*cm))
     
-    # Items
+    # Items — grouped by box (merged Boxes column for shared boxes)
     items_data = [[
-        'Item Detail', 'Length\n(CM)', 'Boxes', 'Stems\nPer Box', 'Total\nStems', 'Price\nPer Stem', 'Amount'
+        'Item Detail', 'Length\n(CM)', 'Stems\nPer Box', 'Boxes', 'Total\nStems', 'Price\nPer Stem', 'Amount'
     ]]
     
-    for item in order.items.all():
-        items_data.append([
-            Paragraph(item.product.name, styles['Normal']),
-            item.stem_length_cm,
-            item.boxes,
-            item.stems_per_box,
-            item.stems,
-            f"{currency} {item.price_per_stem}",
-            f"{currency} {item.total_amount}"
-        ])
+    all_items = list(order.items.select_related('box', 'product').order_by('box__box_number', 'id'))
+    
+    from itertools import groupby
+    
+    def box_key(item):
+        return item.box.box_number if item.box else None
+    
+    # Track which row ranges need SPAN on the Boxes column (col index 3)
+    span_ranges = []
+    
+    for box_num, group_items in groupby(all_items, key=box_key):
+        group_items = list(group_items)
+        is_shared = box_num is not None and len(group_items) > 1
+        group_start_row = len(items_data)  # 1-based since header is row 0
         
+        for i, item in enumerate(group_items):
+            if is_shared:
+                # First item in shared box shows '1', rest show '' (will be merged)
+                box_display = 1 if i == 0 else ''
+            else:
+                box_display = item.boxes
+            
+            items_data.append([
+                Paragraph(item.product.name, styles['Normal']),
+                item.stem_length_cm,
+                item.stems_per_box,
+                box_display,
+                item.stems,
+                f"{currency} {item.price_per_stem}",
+                f"{currency} {item.total_amount}"
+            ])
+        
+        if is_shared:
+            group_end_row = len(items_data) - 1
+            span_ranges.append((group_start_row, group_end_row))
+    
     items_table = Table(items_data, colWidths=[6*cm, 2*cm, 2*cm, 2*cm, 2*cm, 2.5*cm, 2.5*cm])
-    items_table.setStyle(TableStyle([
+    
+    base_style = [
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f0f0f0')),
         ('TEXTCOLOR', (0,0), (-1,0), colors.dimgrey),
         ('ALIGN', (0,0), (-1,0), 'CENTER'),
@@ -196,9 +226,23 @@ def _draw_default_layout(elements, styles, invoice, order, currency):
         
         ('LEFTPADDING', (0,0), (0,-1), 6),
         ('ALIGN', (0,1), (0,-1), 'LEFT'),
-    ]))
+    ]
+    
+    # Add SPAN commands for merged Boxes cells
+    for start_row, end_row in span_ranges:
+        base_style.append(('SPAN', (3, start_row), (3, end_row)))
+        base_style.append(('VALIGN', (3, start_row), (3, end_row), 'MIDDLE'))
+    
+    items_table.setStyle(TableStyle(base_style))
     elements.append(items_table)
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.3*cm))
+    
+    # Total Boxes — left-aligned, separate from financial totals
+    elements.append(Paragraph(
+        f"<b>Total Boxes:</b> {order.total_boxes()}",
+        ParagraphStyle(name='BoxCount', parent=styles['Normal'], fontSize=9, textColor=colors.dimgrey)
+    ))
+    elements.append(Spacer(1, 0.3*cm))
     
     # Totals
     totals_data = [
@@ -367,62 +411,117 @@ def _draw_awb_layout(elements, styles, invoice, order, currency):
     elements.append(t)
     elements.append(Spacer(1, 0.5*cm))
     
-    # 3. Items Table (AWB Style)
-    # Headers: Varieties | Length (cm) | No. of Boxes | Qtty per Box | Total Stems | Price Per Stem | Total Price (EURO)
-    
-    # Note: Screenshot uses EURO, but we should use `currency`.
+    # 3. Items Table (AWB Style) — merged Boxes column for shared boxes
     
     items_header = [
-        'Varieties', 'Length\n(cm)', 'No. of\nBoxes', 'Qtty per\nBox', 'Total Stems', 'Price Per\nStem', f'Total Price\n({currency})'
+        'Varieties', 'Length\n(cm)', 'Qtty per\nBox', 'No. of\nBoxes', 'Total Stems', 'Price Per\nStem', f'Total Price\n({currency})'
     ]
     
     items_data = [items_header]
     
     total_stems = 0
-    total_boxes = 0
+    total_boxes = order.total_boxes()
     
-    for item in order.items.all():
-        total_stems += item.stems
-        total_boxes += item.boxes
-        items_data.append([
-            Paragraph(item.product.name, styles['Normal']),
-            item.stem_length_cm,
-            item.boxes,
-            item.stems_per_box,
-            item.stems,
-            item.price_per_stem,
-            f"{currency} {item.total_amount}"
-        ])
+    all_items = list(order.items.select_related('box', 'product').order_by('box__box_number', 'id'))
+    
+    from itertools import groupby
+    
+    def box_key(item):
+        return item.box.box_number if item.box else None
+    
+    # Track which row ranges need SPAN on the Boxes column (col index 3)
+    span_ranges = []
+    
+    for box_num, group_items in groupby(all_items, key=box_key):
+        group_items = list(group_items)
+        is_shared = box_num is not None and len(group_items) > 1
+        group_start_row = len(items_data)
         
-    # Spacer rows to fill page? Screenshot shows many empty rows.
-    # We'll add a few empty rows to mimic the look or just leave dynamic.
-    # Let's add 5 empty rows for "look".
+        for i, item in enumerate(group_items):
+            total_stems += item.stems
+            if is_shared:
+                box_display = 1 if i == 0 else ''
+            else:
+                box_display = item.boxes
+            
+            items_data.append([
+                Paragraph(item.product.name, styles['Normal']),
+                item.stem_length_cm,
+                item.stems_per_box,
+                box_display,
+                item.stems,
+                item.price_per_stem,
+                f"{currency} {item.total_amount}"
+            ])
+        
+        if is_shared:
+            group_end_row = len(items_data) - 1
+            span_ranges.append((group_start_row, group_end_row))
+    
+    # Spacer rows to fill page (visual padding)
     for _ in range(5):
          items_data.append(['', '', '', '', '', '', '']) 
          
     # Total Row
     items_data.append([
-        'TOTAL', '', total_boxes, '', total_stems, '', f"{currency} {order.total_amount}"
+        'TOTAL', '', '', total_boxes, total_stems, '', f"{currency} {order.total_amount}"
     ])
     
     t_items = Table(items_data, colWidths=[
         6*cm, 2*cm, 2*cm, 2*cm, 2.5*cm, 2*cm, 2.5*cm
     ])
     
-    t_items.setStyle(TableStyle([
+    base_style = [
         ('BOX', (0,0), (-1,-1), 2, colors.black),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.black), # Thinner inner grid
-        ('linebelow', (0,0), (-1,0), 1.5, colors.black), # Thick line below header
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), # Header Bold
-        ('ALIGN', (1,0), (-1,-1), 'CENTER'), # Numbers centered
-        ('ALIGN', (6,1), (6,-1), 'RIGHT'), # Prices right
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('linebelow', (0,0), (-1,0), 1.5, colors.black),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (6,1), (6,-1), 'RIGHT'),
         
         # Last Row Bold
         ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
         ('BACKGROUND', (0,-1), (-1,-1), colors.whitesmoke),
-    ]))
+    ]
+    
+    # Add SPAN commands for merged Boxes cells
+    for start_row, end_row in span_ranges:
+        base_style.append(('SPAN', (3, start_row), (3, end_row)))
+        base_style.append(('VALIGN', (3, start_row), (3, end_row), 'MIDDLE'))
+    
+    t_items.setStyle(TableStyle(base_style))
     elements.append(t_items)
 
-
-
-
+def _draw_etims_info(elements, styles, invoice):
+    """Draw eTIMS info if submitted"""
+    if invoice.etims_status == 'submitted' and invoice.etims_receipt_number:
+        elements.append(Spacer(1, 1*cm))
+        
+        qr_code = qr.QrCodeWidget(invoice.etims_qr_code_url or 'https://etims.kra.go.ke/')
+        bounds = qr_code.getBounds()
+        width = bounds[2] - bounds[0]
+        height = bounds[3] - bounds[1]
+        # Scale down slightly if needed, but Drawing with default transform is usually fine
+        # We can scale by setting transform=[1.5, 0, 0, 1.5, -bounds[0], -bounds[1]] for 150%
+        # For now, default 1:1 is around 1x1 inch which is perfect.
+        d = Drawing(width, height, transform=[1, 0, 0, 1, -bounds[0], -bounds[1]])
+        d.add(qr_code)
+        
+        etims_data = [
+            [
+                Paragraph(f"<b>KRA eTIMS Receipt No:</b> {invoice.etims_receipt_number}<br/>"
+                          f"<b>Internal Data:</b> {invoice.etims_internal_data or 'N/A'}<br/>"
+                          f"<b>Signature:</b> {invoice.etims_signature or 'N/A'}", 
+                          styles['Normal']),
+                d
+            ]
+        ]
+        etims_table = Table(etims_data, colWidths=[13*cm, 4*cm])
+        etims_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (1,0), (1,0), 'RIGHT'),
+            ('BOX', (0,0), (-1,-1), 1, colors.lightgrey),
+            ('PADDING', (0,0), (-1,-1), 6),
+        ]))
+        
+        elements.append(etims_table)

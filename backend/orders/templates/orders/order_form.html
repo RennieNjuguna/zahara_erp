@@ -83,7 +83,7 @@
     <div class="table-responsive">
       <table class="table align-middle" id="items-table">
         <thead>
-          <tr><th style="width:28%">Product</th><th>Length</th><th>Boxes</th><th>Stems/Box</th><th>Price/Stem</th><th></th></tr>
+          <tr><th style="width:24%">Product</th><th>Length</th><th>Box #</th><th>Boxes</th><th>Stems/Box</th><th>Price/Stem</th><th></th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -301,6 +301,7 @@ function addRow() {
       </select>
     </td>
     <td><input class="form-control form-control-sm item-stem" type="number" name="item_stem_length_cm" placeholder="cm"></td>
+    <td><input class="form-control form-control-sm item-box-number" type="number" name="item_box_number" min="1" placeholder="—" title="Items with the same box # share one physical box"></td>
     <td><input class="form-control form-control-sm" type="number" name="item_boxes" value="1" min="1"></td>
     <td><input class="form-control form-control-sm" type="number" name="item_stems_per_box" value="1" min="1"></td>
     <td>
@@ -382,14 +383,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (row_{{ forloop.counter }}) {
             const productSelect = row_{{ forloop.counter }}.querySelector('.item-product');
             const stemInput = row_{{ forloop.counter }}.querySelector('.item-stem');
+            const boxNumberInput = row_{{ forloop.counter }}.querySelector('.item-box-number');
             const boxesInput = row_{{ forloop.counter }}.querySelector('input[name="item_boxes"]');
             const stemsPerBoxInput = row_{{ forloop.counter }}.querySelector('input[name="item_stems_per_box"]');
             const priceInput = row_{{ forloop.counter }}.querySelector('.item-price');
 
-            console.log('Found elements:', { productSelect, stemInput, boxesInput, stemsPerBoxInput, priceInput });
+            console.log('Found elements:', { productSelect, stemInput, boxNumberInput, boxesInput, stemsPerBoxInput, priceInput });
 
             if (productSelect) productSelect.value = '{{ item.product.id }}';
             if (stemInput) stemInput.value = '{{ item.stem_length_cm }}';
+            if (boxNumberInput && '{{ item.box.box_number|default:"" }}') boxNumberInput.value = '{{ item.box.box_number|default:"" }}';
             if (boxesInput) boxesInput.value = '{{ item.boxes }}';
             if (stemsPerBoxInput) stemsPerBoxInput.value = '{{ item.stems_per_box }}';
             if (priceInput) priceInput.value = '{{ item.price_per_stem }}';

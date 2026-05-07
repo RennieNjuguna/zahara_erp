@@ -307,6 +307,40 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
 
+    @action(detail=True, methods=['post'], url_path='send-to-etims')
+    def send_to_etims(self, request, pk=None):
+        invoice = self.get_object()
+        
+        # Don't resubmit if already submitted
+        if invoice.etims_status == 'submitted':
+            return Response({
+                'success': False,
+                'message': 'Invoice is already submitted to eTIMS.',
+                'invoice': InvoiceSerializer(invoice).data
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        from invoices.etims_service import ETIMSService
+        etims_service = ETIMSService()
+        
+        success, message = etims_service.submit_invoice(invoice)
+        
+        if success:
+            # Re-generate PDF if it was successful to include the QR code
+            from invoices.utils import generate_invoice_pdf
+            generate_invoice_pdf(invoice.order)
+            
+            return Response({
+                'success': True,
+                'message': message,
+                'invoice': InvoiceSerializer(invoice).data
+            })
+        else:
+            return Response({
+                'success': False,
+                'error': message,
+                'invoice': InvoiceSerializer(invoice).data
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CreditNoteViewSet(viewsets.ModelViewSet):
     queryset = CreditNote.objects.all()

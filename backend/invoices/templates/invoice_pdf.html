@@ -276,7 +276,7 @@
             </div>
             <div class="location-info">
                 Nakuru & Laikipia, Kenya<br>
-                TAX ID P052064981H
+                <b>TAX ID: P052064981H</b>
             </div>
         </div>
 
@@ -292,7 +292,7 @@
                 <h3>Consignee Details</h3>
                 <div class="details-text">
                     {{ invoice.order.customer.name }}<br>
-                    {% if invoice.order.branch %}Branch: {{ invoice.order.branch.name }}<br>{% endif %}
+                    {% if invoice.order.branch %}{{ invoice.order.branch.name }}<br>{% endif %}
                     {% if invoice.order.remarks %}<br><strong>Remarks:</strong><br>{{ invoice.order.remarks }}{% endif %}
                 </div>
             </div>

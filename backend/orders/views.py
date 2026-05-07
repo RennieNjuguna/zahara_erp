@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.admin.views.decorators import staff_member_required
-from .models import CustomerOrderDefaults, Order, MissedSale
+from .models import CustomerOrderDefaults, Order, OrderBox, MissedSale
 from customers.models import Customer, Branch
 from products.models import Product
 from django.contrib import messages
@@ -69,6 +69,18 @@ def order_detail(request, order_id):
     })
 
 
+def _assign_box(order, item, box_num_str):
+    """Helper: assign an OrderItem to an OrderBox if box_num_str is provided."""
+    box_num_str = (box_num_str or '').strip()
+    if box_num_str and box_num_str.isdigit() and int(box_num_str) > 0:
+        box_number = int(box_num_str)
+        order_box, _ = OrderBox.objects.get_or_create(
+            order=order, box_number=box_number
+        )
+        item.box = order_box
+        item.save(update_fields=['box'])
+
+
 def order_create(request):
     customers = Customer.objects.all().order_by('name')
     products = Product.objects.all().order_by('name')
@@ -78,9 +90,6 @@ def order_create(request):
             branch_id = request.POST.get('branch') or None
             date = request.POST.get('date')
             remarks = request.POST.get('remarks')
-            logistics_provider = request.POST.get('logistics_provider')
-            logistics_cost = request.POST.get('logistics_cost') or None
-
             logistics_provider = request.POST.get('logistics_provider')
             logistics_cost = request.POST.get('logistics_cost') or None
 
@@ -107,6 +116,7 @@ def order_create(request):
             boxes_list = request.POST.getlist('item_boxes')
             stems_per_box_list = request.POST.getlist('item_stems_per_box')
             price_list = request.POST.getlist('item_price_per_stem')
+            box_numbers = request.POST.getlist('item_box_number')
 
             if product_ids and any((pid or '').strip() for pid in product_ids):
                 for idx, pid in enumerate(product_ids):
@@ -122,13 +132,17 @@ def order_create(request):
                     spb = stems_per_box_list[idx].strip() if idx < len(stems_per_box_list) else '0'
                     pps = price_list[idx].strip() if idx < len(price_list) else '0'
 
-                    order.items.create(
+                    item = order.items.create(
                         product_id=int(pid),
                         stem_length_cm=int(sl) if sl else 0,
                         boxes=int(bx) if bx else 0,
                         stems_per_box=int(spb) if spb else 0,
                         price_per_stem=Decimal(pps) if pps else Decimal('0'),
                     )
+
+                    # Assign to box if box number provided
+                    bn = box_numbers[idx].strip() if idx < len(box_numbers) else ''
+                    _assign_box(order, item, bn)
 
             # Recalculate totals and trigger invoice regeneration via Order post_save signal
             order.save()
@@ -146,7 +160,7 @@ def order_create(request):
 
 
 def order_edit(request, order_id):
-    order = get_object_or_404(Order.objects.prefetch_related('items__product'), id=order_id)
+    order = get_object_or_404(Order.objects.prefetch_related('items__product', 'items__box'), id=order_id)
     customers = Customer.objects.all().order_by('name')
     products = Product.objects.all().order_by('name')
 
@@ -170,8 +184,9 @@ def order_edit(request, order_id):
             logistics_cost = request.POST.get('logistics_cost') or None
             order.logistics_cost = Decimal(logistics_cost) if logistics_cost else None
 
-            # Clear existing items and recreate from form data
+            # Clear existing items and boxes, then recreate from form data
             order.items.all().delete()
+            order.order_boxes.all().delete()
 
             # Create new items from arrays in the form
             product_ids = request.POST.getlist('item_product')
@@ -179,6 +194,7 @@ def order_edit(request, order_id):
             boxes_list = request.POST.getlist('item_boxes')
             stems_per_box_list = request.POST.getlist('item_stems_per_box')
             price_list = request.POST.getlist('item_price_per_stem')
+            box_numbers = request.POST.getlist('item_box_number')
 
             if product_ids and any((pid or '').strip() for pid in product_ids):
                 for idx, pid in enumerate(product_ids):
@@ -194,13 +210,17 @@ def order_edit(request, order_id):
                     spb = stems_per_box_list[idx].strip() if idx < len(stems_per_box_list) else '0'
                     pps = price_list[idx].strip() if idx < len(price_list) else '0'
 
-                    order.items.create(
+                    item = order.items.create(
                         product_id=int(pid),
                         stem_length_cm=int(sl) if sl else 0,
                         boxes=int(bx) if bx else 0,
                         stems_per_box=int(spb) if spb else 0,
                         price_per_stem=Decimal(pps) if pps else Decimal('0'),
                     )
+
+                    # Assign to box if box number provided
+                    bn = box_numbers[idx].strip() if idx < len(box_numbers) else ''
+                    _assign_box(order, item, bn)
 
             order.save()
             messages.success(request, 'Order updated.')
@@ -225,14 +245,19 @@ def order_item_add(request, order_id):
             boxes = int(request.POST.get('boxes'))
             stems_per_box = int(request.POST.get('stems_per_box'))
             price_per_stem = Decimal(request.POST.get('price_per_stem'))
+            box_number = request.POST.get('box_number', '').strip()
 
-            order.items.create(
+            item = order.items.create(
                 product_id=product_id,
                 stem_length_cm=stem_length_cm,
                 boxes=boxes,
                 stems_per_box=stems_per_box,
                 price_per_stem=price_per_stem,
             )
+
+            # Assign to box if box number provided
+            _assign_box(order, item, box_number)
+
             # Recalculate totals and regenerate invoice
             order.save()
             messages.success(request, 'Item added.')

@@ -8,10 +8,39 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from decimal import Decimal
 
+class ETIMSSettings(models.Model):
+    """Singleton model for storing KRA eTIMS API configurations"""
+    kra_pin = models.CharField(max_length=20, help_text="Your KRA PIN")
+    branch_id = models.CharField(max_length=10, help_text="eTIMS Branch ID")
+    device_serial_number = models.CharField(max_length=50, blank=True, null=True)
+    api_base_url = models.URLField(help_text="eTIMS API Base URL (Sandbox or Production)")
+    certificate_path = models.CharField(max_length=255, blank=True, null=True, help_text="Path to digital certificate if required")
+    certificate_password = models.CharField(max_length=255, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"eTIMS Settings ({self.kra_pin})"
+        
+    class Meta:
+        verbose_name_plural = "eTIMS Settings"
+
 class Invoice(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='invoice')
     invoice_code = models.CharField(max_length=20, unique=True)
     pdf_file = models.FileField(upload_to='invoices_pdfs/', blank=True, null=True)
+    
+    # eTIMS fields
+    etims_receipt_number = models.CharField(max_length=100, blank=True, null=True, help_text="KRA eTIMS Receipt Number")
+    etims_internal_data = models.CharField(max_length=255, blank=True, null=True, help_text="KRA Internal Data (Control Code)")
+    etims_signature = models.CharField(max_length=255, blank=True, null=True, help_text="KRA eTIMS Signature")
+    etims_qr_code_url = models.URLField(blank=True, null=True, help_text="KRA QR Code URL")
+    etims_status = models.CharField(
+        max_length=20, 
+        choices=[('pending', 'Pending'), ('submitted', 'Submitted'), ('failed', 'Failed')],
+        default='pending'
+    )
+    etims_error_message = models.TextField(blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 

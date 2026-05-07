@@ -6,9 +6,27 @@ from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from decimal import Decimal
 
+
+class OrderBox(models.Model):
+    """A physical box within an order that can contain multiple products (mixed box)."""
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name='order_boxes')
+    box_number = models.PositiveIntegerField(help_text="Sequential box number within the order")
+    label = models.CharField(max_length=100, blank=True, null=True, help_text="Optional box label")
+
+    class Meta:
+        unique_together = ('order', 'box_number')
+        ordering = ['box_number']
+
+    def __str__(self):
+        label_part = f" ({self.label})" if self.label else ""
+        return f"Box {self.box_number}{label_part}"
+
+
 class OrderItem(models.Model):
     order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    box = models.ForeignKey(OrderBox, on_delete=models.SET_NULL, null=True, blank=True,
+                            related_name='items', help_text="Physical box this item belongs to (for mixed boxes)")
     stem_length_cm = models.PositiveIntegerField(help_text="Stem length in centimeters")
     boxes = models.PositiveIntegerField(default=1)
     stems_per_box = models.PositiveIntegerField(default=1)
@@ -178,7 +196,13 @@ class Order(models.Model):
             existing_orders = Order.objects.filter(
                 invoice_code__startswith=short_code
             ).count() + 1
-            self.invoice_code = f"{short_code}{str(existing_orders).zfill(3)}"
+            
+            new_code = f"{short_code}{str(existing_orders).zfill(3)}"
+            while Order.objects.filter(invoice_code=new_code).exists():
+                existing_orders += 1
+                new_code = f"{short_code}{str(existing_orders).zfill(3)}"
+                
+            self.invoice_code = new_code
 
         # Update status based on payment allocations if status is pending or partial
         if self.pk and self.status not in ['cancelled', 'full_claim']:
@@ -389,6 +413,13 @@ class Order(models.Model):
                 item._sync_customer_pricing()
                 synced_count += 1
         return synced_count
+
+    def total_boxes(self):
+        """Count total physical boxes: unique OrderBoxes + unboxed item box counts."""
+        boxed_count = self.order_boxes.count()  # each OrderBox = 1 physical box
+        unboxed_sum = self.items.filter(box__isnull=True).aggregate(
+            total=Sum('boxes'))['total'] or 0
+        return boxed_count + unboxed_sum
 
 
 

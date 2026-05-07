@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from customers.models import Customer, Branch
 from products.models import Product, CustomerProductPrice
-from orders.models import Order, OrderItem, CustomerOrderDefaults
+from orders.models import Order, OrderItem, OrderBox, CustomerOrderDefaults
 from payments.models import Payment, PaymentAllocation, CustomerBalance, AccountStatement, PaymentLog
 from invoices.models import Invoice, CreditNote, CreditNoteItem
 from expenses.models import Expense, ExpenseCategory, ExpenseAttachment
@@ -96,13 +96,21 @@ class CustomerProductPriceSerializer(serializers.ModelSerializer):
 
 
 # Order Serializers
+class OrderBoxSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderBox
+        fields = ['id', 'box_number', 'label']
+        read_only_fields = ['id']
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
+    box = OrderBoxSerializer(read_only=True)
 
     class Meta:
         model = OrderItem
         fields = [
-            'id', 'product', 'stem_length_cm', 'boxes',
+            'id', 'product', 'box', 'stem_length_cm', 'boxes',
             'stems_per_box', 'stems', 'price_per_stem', 'total_amount'
         ]
 
@@ -128,10 +136,12 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     customer = CustomerSummarySerializer(read_only=True)
     branch = BranchSerializer(read_only=True)
+    order_boxes = OrderBoxSerializer(many=True, read_only=True)
     payment_status = serializers.SerializerMethodField()
     outstanding_amount = serializers.SerializerMethodField()
     total_paid_amount = serializers.SerializerMethodField()
     credit_notes = serializers.SerializerMethodField()
+    total_boxes = serializers.SerializerMethodField()
 
     def get_payment_status(self, obj):
         return obj.payment_status()
@@ -146,13 +156,17 @@ class OrderSerializer(serializers.ModelSerializer):
         credit_notes = obj.credit_notes.all()
         return CreditNoteSummarySerializer(credit_notes, many=True).data
 
+    def get_total_boxes(self, obj):
+        return obj.total_boxes()
+
     class Meta:
         model = Order
         fields = [
             'id', 'invoice_code', 'customer', 'branch', 'total_amount',
             'currency', 'date', 'status', 'status_reason', 'remarks',
             'logistics_provider', 'logistics_cost', 'tracking_number',
-            'delivery_status', 'items', 'payment_status', 'outstanding_amount',
+            'delivery_status', 'items', 'order_boxes', 'total_boxes',
+            'payment_status', 'outstanding_amount',
             'total_paid_amount', 'credit_notes'
         ]
 
@@ -163,6 +177,7 @@ class CreateOrderItemSerializer(serializers.Serializer):
     boxes = serializers.IntegerField()
     stems_per_box = serializers.IntegerField()
     price_per_stem = serializers.DecimalField(max_digits=10, decimal_places=2)
+    box_number = serializers.IntegerField(required=False, allow_null=True)
 
 
 class CreateOrderSerializer(serializers.ModelSerializer):
@@ -180,7 +195,14 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         order = Order.objects.create(**validated_data)
 
         for item_data in items_data:
-            OrderItem.objects.create(order=order, **item_data)
+            box_number = item_data.pop('box_number', None)
+            item = OrderItem.objects.create(order=order, **item_data)
+            if box_number and box_number > 0:
+                order_box, _ = OrderBox.objects.get_or_create(
+                    order=order, box_number=box_number
+                )
+                item.box = order_box
+                item.save(update_fields=['box'])
 
         return order
 
@@ -279,6 +301,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             'id', 'order', 'invoice_code', 'pdf_file',
+            'etims_receipt_number', 'etims_internal_data', 'etims_signature',
+            'etims_qr_code_url', 'etims_status', 'etims_error_message',
             'created_at', 'last_updated'
         ]
 
